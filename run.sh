@@ -29,6 +29,11 @@ if command_exists dpkg; then
     fi
 fi
 
+# Check nodejs (JavaScript runtime needed by yt-dlp to bypass bot protection)
+if ! command_exists node; then
+    MISSING_PKG="$MISSING_PKG nodejs npm"
+fi
+
 if [ -n "$MISSING_PKG" ]; then
     echo "Eksik paketler tespit edildi:$MISSING_PKG"
     echo "Yükleniyor... (Root yetkisi için şifreniz istenebilir)"
@@ -54,6 +59,10 @@ source "$VENV_DIR/bin/activate"
 echo "Python bağımlılıkları kontrol ediliyor/kuruluyor..."
 pip install --upgrade pip > /dev/null 2>&1
 pip install -r backend/requirements.txt
+
+# Ensure yt-dlp is updated to the latest version to bypass recent YouTube protections
+echo "yt-dlp güncelleniyor..."
+pip install -U yt-dlp > /dev/null 2>&1
 
 # Configure UFW (Firewall)
 if command_exists ufw; then
