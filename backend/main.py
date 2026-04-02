@@ -75,7 +75,7 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
         'noplaylist': True,
         'quiet': False,
         'extractor_args': {'youtube': ['player_client=android']}, # Help bypass bot checks
-        'js_runtimes': ['node'], # Explicitly tell yt-dlp to use node JS runtime
+        'js_runtimes': {'node': {}}, # Explicitly tell yt-dlp to use node JS runtime
     }
 
     # Check if a cookies file exists in the root directory
@@ -166,7 +166,7 @@ async def prepare_download(request: DownloadRequest):
         'noplaylist': True,
         'quiet': False,
         'extractor_args': {'youtube': ['player_client=android']}, # Help bypass bot checks
-        'js_runtimes': ['node'], # Explicitly tell yt-dlp to use node JS runtime
+        'js_runtimes': {'node': {}}, # Explicitly tell yt-dlp to use node JS runtime
     }
 
     # Check if a cookies file exists in the root directory
