@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Downloader</title>
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#4A90E2">
+    <!-- Basic styling for modern look -->
+    <style>
+        :root {
+            --primary: #4A90E2;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: var(--primary);
+            font-size: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input[type="url"],
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+        }
+
+        .time-inputs {
+            display: flex;
+            gap: 15px;
+        }
+
+        .time-inputs .form-group {
+            flex: 1;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #357ABD;
+        }
+
+        button:disabled {
+            background-color: #A0C4E8;
+            cursor: not-allowed;
+        }
+
+        .status {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 14px;
+            min-height: 20px;
+        }
+
+        .error {
+            color: #d9534f;
+        }
+
+        .success {
+            color: #5cb85c;
+        }
+
+        .info {
+            color: #5bc0de;
+        }
+        
+        .hint {
+            font-size: 11px;
+            color: #888;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Video İndirici</h1>
+    
+    <div class="form-group">
+        <label for="url">Video Linki (URL)</label>
+        <input type="url" id="url" placeholder="https://..." required>
+    </div>
+
+    <div class="time-inputs">
+        <div class="form-group">
+            <label for="start_time">Başlangıç</label>
+            <input type="text" id="start_time" placeholder="00:00:00">
+            <div class="hint">SS:DD:SS formatı</div>
+        </div>
+        <div class="form-group">
+            <label for="end_time">Bitiş</label>
+            <input type="text" id="end_time" placeholder="00:01:15">
+            <div class="hint">SS:DD:SS formatı</div>
+        </div>
+    </div>
+
+    <button id="downloadBtn">İndir</button>
+
+    <div class="status" id="statusMessage"></div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
