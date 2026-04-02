@@ -74,7 +74,12 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
         'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best', # Try to get mp4
         'noplaylist': True,
         'quiet': False,
+        'extractor_args': {'youtube': ['player_client=android']}, # Help bypass bot checks
     }
+
+    # Check if a cookies file exists in the root directory
+    if os.path.exists("cookies.txt"):
+        ydl_opts['cookiefile'] = "cookies.txt"
 
     # Helper to parse HH:MM:SS to seconds
     def parse_time(time_str):
@@ -159,8 +164,12 @@ async def prepare_download(request: DownloadRequest):
         'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best', 
         'noplaylist': True,
         'quiet': False,
-        'cookiefile': 'cookies.txt',
+        'extractor_args': {'youtube': ['player_client=android']}, # Help bypass bot checks
     }
+
+    # Check if a cookies file exists in the root directory
+    if os.path.exists("cookies.txt"):
+        ydl_opts['cookiefile'] = "cookies.txt"
 
     try:
         def run_yt_dlp(opts, url):
