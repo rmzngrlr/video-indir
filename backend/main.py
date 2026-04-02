@@ -75,6 +75,7 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
         'noplaylist': True,
         'quiet': False,
         'extractor_args': {'youtube': ['player_client=android']}, # Help bypass bot checks
+        'js_runtimes': ['node'], # Explicitly tell yt-dlp to use node JS runtime
     }
 
     # Check if a cookies file exists in the root directory
@@ -117,7 +118,7 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
                 # Ensure we get the correct final filename
                 return ydl.prepare_filename(info_dict)
 
-        final_filename = await asyncio.to_thread(run_yt_dlp, ydl_, request.url)
+        final_filename = await asyncio.to_thread(run_yt_dlp, ydl_opts, request.url)
 
         if not final_filename or not os.path.exists(final_filename):
              # Sometimes yt-dlp changes the extension after merge (e.g., to .mkv or .mp4)
@@ -165,6 +166,7 @@ async def prepare_download(request: DownloadRequest):
         'noplaylist': True,
         'quiet': False,
         'extractor_args': {'youtube': ['player_client=android']}, # Help bypass bot checks
+        'js_runtimes': ['node'], # Explicitly tell yt-dlp to use node JS runtime
     }
 
     # Check if a cookies file exists in the root directory
