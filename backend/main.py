@@ -112,7 +112,7 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
                 # Ensure we get the correct final filename
                 return ydl.prepare_filename(info_dict)
 
-        final_filename = await asyncio.to_thread(run_yt_dlp, ydl_opts, request.url)
+        final_filename = await asyncio.to_thread(run_yt_dlp, ydl_, request.url)
 
         if not final_filename or not os.path.exists(final_filename):
              # Sometimes yt-dlp changes the extension after merge (e.g., to .mkv or .mp4)
@@ -159,6 +159,7 @@ async def prepare_download(request: DownloadRequest):
         'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best', 
         'noplaylist': True,
         'quiet': False,
+        'cookiefile': 'cookies.txt',
     }
 
     try:
