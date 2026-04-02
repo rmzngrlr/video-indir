@@ -30,8 +30,16 @@ pip install -r backend/requirements.txt
 
 Projenin kök dizinindeyken arka uç (backend) sunucusunu başlatmak için oluşturulmuş hazır scriptleri kullanabilirsiniz:
 
+* **Ubuntu / Linux (Önerilen Hızlı Kurulum ve Çalıştırma):** Terminalde `./run.sh` komutunu çalıştırın. Bu betik:
+  1. Sisteminizi kontrol edip eksikse `ffmpeg` ve `python3-venv` gibi araçları kurar.
+  2. İzole bir Python sanal ortamı (`venv`) oluşturur.
+  3. Gerekli kütüphaneleri yükler veya günceller.
+  4. UFW güvenlik duvarından 3003 portuna izin verir.
+  5. Sunucuyu otomatik olarak başlatır.
+  - *Not: Kurulum ve port ayarı adımları için root (sudo) şifrenizi girmeniz gerekebilir. Tüm ayarlar yapıldıktan sonraki çalıştırmalarda doğrudan sunucu başlatılacaktır.*
+
 * **Windows:** `start_server.bat` dosyasına çift tıklayın.
-* **Ubuntu / Linux:** Terminalde `./start_server.sh` komutunu çalıştırın. (Eğer izin hatası verirse önce `chmod +x start_server.sh` yapın).
+* **Eski Yöntem (Ubuntu / Linux):** Sadece sunucuyu başlatmak isterseniz terminalde `./start_server.sh` komutunu çalıştırabilirsiniz. (Eğer izin hatası verirse önce `chmod +x start_server.sh` yapın).
 
 Bu scriptler sunucuyu `0.0.0.0` üzerinden başlatır; böylece sunucunun bulunduğu ağa/internete açık IP adresi üzerinden dışarıdan erişebilirsiniz.
 
