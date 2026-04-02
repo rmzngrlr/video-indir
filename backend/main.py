@@ -74,7 +74,7 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
         'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best', # Try to get mp4
         'noplaylist': True,
         'quiet': False,
-        'extractor_args': {'youtube': ['player_client=android']}, # Help bypass bot checks
+        'extractor_args': {'youtube': ['player_client=mweb,default']}, # Help bypass bot checks
         'js_runtimes': {'node': {}}, # Explicitly tell yt-dlp to use node JS runtime
     }
 
@@ -165,7 +165,7 @@ async def prepare_download(request: DownloadRequest):
         'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best', 
         'noplaylist': True,
         'quiet': False,
-        'extractor_args': {'youtube': ['player_client=android']}, # Help bypass bot checks
+        'extractor_args': {'youtube': ['player_client=mweb,default']}, # Help bypass bot checks
         'js_runtimes': {'node': {}}, # Explicitly tell yt-dlp to use node JS runtime
     }
 
