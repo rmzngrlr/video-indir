@@ -71,10 +71,10 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
 
     ydl_opts = {
         'outtmpl': output_template,
-        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best', # Try to get mp4
+        'format': 'bestvideo+bestaudio/best', # En iyi kaliteyi al, mp4/webm fark etmeksizin
+        'merge_output_format': 'mp4', # İndirme bitince mp4'e birleştir/dönüştür
         'noplaylist': True,
         'quiet': False,
-        'extractor_args': {'youtube': ['player_client=mweb,default']}, # Help bypass bot checks
         'js_runtimes': {'node': {}}, # Explicitly tell yt-dlp to use node JS runtime
     }
 
@@ -164,10 +164,10 @@ async def prepare_download(request: DownloadRequest):
 
     ydl_opts = {
         'outtmpl': output_template,
-        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best', 
+        'format': 'bestvideo+bestaudio/best', # En iyi kaliteyi al, mp4/webm fark etmeksizin
+        'merge_output_format': 'mp4', # İndirme bitince mp4'e birleştir/dönüştür
         'noplaylist': True,
         'quiet': False,
-        'extractor_args': {'youtube': ['player_client=mweb,default']}, # Help bypass bot checks
         'js_runtimes': {'node': {}}, # Explicitly tell yt-dlp to use node JS runtime
     }
 
