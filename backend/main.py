@@ -78,9 +78,17 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
         'js_runtimes': {'node': {}}, # Explicitly tell yt-dlp to use node JS runtime
     }
 
-    # Check if a cookies file exists in the root directory
-    if os.path.exists("cookies.txt"):
-        ydl_opts['cookiefile'] = "cookies.txt"
+    # Determine which cookie file to use based on URL
+    cookie_file = "cookies.txt" # fallback
+    if "instagram.com" in request.url.lower() and os.path.exists("instagram_cookies.txt"):
+        cookie_file = "instagram_cookies.txt"
+    elif "facebook.com" in request.url.lower() and os.path.exists("facebook_cookies.txt"):
+        cookie_file = "facebook_cookies.txt"
+    elif "youtube.com" in request.url.lower() and os.path.exists("youtube_cookies.txt"):
+        cookie_file = "youtube_cookies.txt"
+
+    if os.path.exists(cookie_file):
+        ydl_opts['cookiefile'] = cookie_file
 
     # Helper to parse HH:MM:SS to seconds
     def parse_time(time_str):
@@ -151,7 +159,7 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
         if "confirm you’re not a bot" in error_msg.lower() or "confirm you're not a bot" in error_msg.lower():
             raise HTTPException(status_code=400, detail="YouTube bot korumasına takıldınız! Çözüm için: Bilgisayarınızda YouTube'a girin, 'Get cookies.txt LOCALLY' eklentisiyle çerezleri indirin ve sunucudaki proje ana dizinine 'cookies.txt' adıyla kaydedip sunucuyu yeniden başlatın.")
         if "login required" in error_msg.lower() or "rate-limit reached" in error_msg.lower():
-            raise HTTPException(status_code=400, detail="Instagram/Facebook giriş zorunluluğuna veya sınırına takıldınız! Çözüm için: Kendi bilgisayarınızda ilgili siteye (Instagram vs) giriş yapın, 'Get cookies.txt LOCALLY' eklentisiyle çerezleri indirin ve sunucu dizinine 'cookies.txt' adıyla kaydedip sunucuyu yeniden başlatın.")
+            raise HTTPException(status_code=400, detail="Instagram/Facebook giriş sınırına takıldınız! Çözüm: Bilgisayarınızda Instagram'a (veya Facebook'a) giriş yapın, 'Get cookies.txt LOCALLY' eklentisiyle çerezleri indirin ve sunucuya 'instagram_cookies.txt' (veya facebook_cookies.txt) adıyla kaydedip yeniden başlatın.")
         raise HTTPException(status_code=400, detail=f"İndirme hatası: {error_msg}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Beklenmeyen bir hata oluştu: {str(e)}")
@@ -173,9 +181,17 @@ async def prepare_download(request: DownloadRequest):
         'js_runtimes': {'node': {}}, # Explicitly tell yt-dlp to use node JS runtime
     }
 
-    # Check if a cookies file exists in the root directory
-    if os.path.exists("cookies.txt"):
-        ydl_opts['cookiefile'] = "cookies.txt"
+    # Determine which cookie file to use based on URL
+    cookie_file = "cookies.txt" # fallback
+    if "instagram.com" in request.url.lower() and os.path.exists("instagram_cookies.txt"):
+        cookie_file = "instagram_cookies.txt"
+    elif "facebook.com" in request.url.lower() and os.path.exists("facebook_cookies.txt"):
+        cookie_file = "facebook_cookies.txt"
+    elif "youtube.com" in request.url.lower() and os.path.exists("youtube_cookies.txt"):
+        cookie_file = "youtube_cookies.txt"
+
+    if os.path.exists(cookie_file):
+        ydl_opts['cookiefile'] = cookie_file
 
     try:
         def run_yt_dlp(opts, url):
@@ -236,7 +252,7 @@ async def prepare_download(request: DownloadRequest):
         if "confirm you’re not a bot" in error_msg.lower() or "confirm you're not a bot" in error_msg.lower():
             raise HTTPException(status_code=400, detail="YouTube bot korumasına takıldınız! Çözüm için: Bilgisayarınızda YouTube'a girin, 'Get cookies.txt LOCALLY' eklentisiyle çerezleri indirin ve sunucudaki proje ana dizinine 'cookies.txt' adıyla kaydedip sunucuyu yeniden başlatın.")
         if "login required" in error_msg.lower() or "rate-limit reached" in error_msg.lower():
-            raise HTTPException(status_code=400, detail="Instagram/Facebook giriş zorunluluğuna veya sınırına takıldınız! Çözüm için: Kendi bilgisayarınızda ilgili siteye (Instagram vs) giriş yapın, 'Get cookies.txt LOCALLY' eklentisiyle çerezleri indirin ve sunucu dizinine 'cookies.txt' adıyla kaydedip sunucuyu yeniden başlatın.")
+            raise HTTPException(status_code=400, detail="Instagram/Facebook giriş sınırına takıldınız! Çözüm: Bilgisayarınızda Instagram'a (veya Facebook'a) giriş yapın, 'Get cookies.txt LOCALLY' eklentisiyle çerezleri indirin ve sunucuya 'instagram_cookies.txt' (veya facebook_cookies.txt) adıyla kaydedip yeniden başlatın.")
         raise HTTPException(status_code=400, detail=f"İndirme hatası: {error_msg}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Beklenmeyen bir hata oluştu: {str(e)}")
