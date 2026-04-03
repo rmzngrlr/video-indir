@@ -69,6 +69,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 videoThumbnail.style.display = 'none';
             }
 
+            // Saniyeyi SS:DD:SS formatına çevirme
+            if (data.duration) {
+                const totalSeconds = parseInt(data.duration, 10);
+                const hours = Math.floor(totalSeconds / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+                const seconds = totalSeconds % 60;
+
+                const formatTime = (time) => String(time).padStart(2, '0');
+
+                startTimeInput.value = "00:00:00";
+                endTimeInput.value = `${formatTime(hours)}:${formatTime(minutes)}:${formatTime(seconds)}`;
+            } else {
+                // Uzunluk okunamadıysa varsayılan boş kalsın
+                startTimeInput.value = "";
+                endTimeInput.value = "";
+            }
+
             videoInfoContainer.style.display = 'block';
             showStatus('Video bulundu! İndirmek için Şimdi İndir butonuna tıklayın.', 'success');
 
