@@ -12,6 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const shortcutModal = document.getElementById('shortcutModal');
     const closeModalBtn = document.getElementById('closeModalBtn');
     const apiEndpointUrl = document.getElementById('apiEndpointUrl');
+    const progressContainer = document.getElementById('progressContainer');
+    const downloadProgress = document.getElementById('downloadProgress');
+    const progressText = document.getElementById('progressText');
 
     let originalStartTime = null;
     let originalEndTime = null;
@@ -142,8 +145,30 @@ document.addEventListener('DOMContentLoaded', () => {
         confirmDownloadBtn.disabled = true;
         showStatus('İndirme hazırlanıyor, lütfen bekleyin... (Bu işlem videonun uzunluğuna göre sürebilir)', 'info');
 
+        progressContainer.style.display = 'block';
+        downloadProgress.value = 0;
+        progressText.textContent = '%0';
+
+        let progressInterval;
+        const clientId = Date.now().toString();
+
         try {
-            const payload = { url: url };
+            const payload = { url: url, client_id: clientId };
+
+            progressInterval = setInterval(async () => {
+                try {
+                    const progRes = await fetch(`/api/progress/${clientId}`);
+                    if (progRes.ok) {
+                        const progData = await progRes.json();
+                        if (progData.progress > 0) {
+                            downloadProgress.value = progData.progress;
+                            progressText.textContent = '%' + progData.progress.toFixed(1);
+                        }
+                    }
+                } catch (e) {
+                    console.log('Progress fetch error', e);
+                }
+            }, 500);
 
             // Only send slice times if the user actually modified them
             // This prevents full-video re-encoding when downloading the entire clip
@@ -167,6 +192,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const data = await response.json();
             
+            clearInterval(progressInterval);
+            progressContainer.style.display = 'none';
+
             // Trigger download via GET navigation to avoid OOM crashes entirely
             const downloadUrl = `/api/download_file/${data.token}`;
             const a = document.createElement('a');
@@ -190,6 +218,8 @@ document.addEventListener('DOMContentLoaded', () => {
             startTimeInput.value = '';
             endTimeInput.value = '';
         } catch (error) {
+            clearInterval(progressInterval);
+            progressContainer.style.display = 'none';
             console.error('Download error:', error);
             showStatus(error.message, 'error');
         } finally {

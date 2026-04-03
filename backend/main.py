@@ -49,6 +49,9 @@ class DownloadRequest(BaseModel):
     url: str
     start_time: Optional[str] = None
     end_time: Optional[str] = None
+    client_id: Optional[str] = None
+
+progress_store = {}
 
 def remove_file(path: str):
     """Background task to remove the file after it has been sent."""
@@ -119,6 +122,13 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
     file_id = str(uuid.uuid4())
     output_template = os.path.join(DOWNLOAD_DIR, f"{file_id}.%(ext)s")
 
+    def progress_hook(d):
+        if request.client_id and d['status'] == 'downloading':
+            total = d.get('total_bytes') or d.get('total_bytes_estimate')
+            if total and total > 0:
+                percent = d.get('downloaded_bytes', 0) / total * 100
+                progress_store[request.client_id] = round(percent, 1)
+
     ydl_opts = {
         'outtmpl': output_template,
         # Sadece Apple/iOS (iPhone) cihazların yerel olarak desteklediği H.264 (avc) codec'ini zorlar
@@ -127,6 +137,7 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
         'noplaylist': True,
         'quiet': False,
         'js_runtimes': {'node': {}}, # Explicitly tell yt-dlp to use node JS runtime
+        'progress_hooks': [progress_hook],
         'postprocessors': [{
             'key': 'FFmpegVideoConvertor',
             'preferedformat': 'mp4',
@@ -234,6 +245,13 @@ async def prepare_download(request: DownloadRequest):
     file_id = str(uuid.uuid4())
     output_template = os.path.join(DOWNLOAD_DIR, f"{file_id}.%(ext)s")
 
+    def progress_hook(d):
+        if request.client_id and d['status'] == 'downloading':
+            total = d.get('total_bytes') or d.get('total_bytes_estimate')
+            if total and total > 0:
+                percent = d.get('downloaded_bytes', 0) / total * 100
+                progress_store[request.client_id] = round(percent, 1)
+
     ydl_opts = {
         'outtmpl': output_template,
         # Sadece Apple/iOS (iPhone) cihazların yerel olarak desteklediği H.264 (avc) codec'ini zorlar
@@ -242,14 +260,16 @@ async def prepare_download(request: DownloadRequest):
         'noplaylist': True,
         'quiet': False,
         'js_runtimes': {'node': {}}, # Explicitly tell yt-dlp to use node JS runtime
+        'progress_hooks': [progress_hook],
         'postprocessors': [{
             'key': 'FFmpegVideoConvertor',
             'preferedformat': 'mp4',
         }],
-        'postprocessor_args': [
+        # Use dict format to explicitly apply args ONLY to the VideoConvertor
+        'postprocessor_args': {'FFmpegVideoConvertor': [
             '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
             '-c:a', 'aac'
-        ]
+        ]}
     }
 
     # Determine which cookie file to use based on URL
@@ -281,10 +301,12 @@ async def prepare_download(request: DownloadRequest):
 
             # Helper to parse HH:MM:SS to seconds for accurate calculation
             def parse_time(time_str):
+                if not time_str:
+                    return 0.0
                 parts = time_str.split(':')
                 if len(parts) == 3: return int(parts[0]) * 3600 + int(parts[1]) * 60 + float(parts[2])
                 elif len(parts) == 2: return int(parts[0]) * 60 + float(parts[1])
-                return float(parts[0])
+                return float(parts[0]) if parts[0] else 0.0
 
             start_sec = parse_time(request.start_time)
             end_sec = parse_time(request.end_time)
@@ -344,6 +366,10 @@ async def prepare_download(request: DownloadRequest):
         raise HTTPException(status_code=400, detail=f"İndirme hatası: {error_msg}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Beklenmeyen bir hata oluştu: {str(e)}")
+
+@app.get("/api/progress/{client_id}")
+async def get_progress(client_id: str):
+    return {"progress": progress_store.get(client_id, 0)}
 
 @app.get("/api/download_file/{token}")
 async def download_file(token: str, background_tasks: BackgroundTasks):
