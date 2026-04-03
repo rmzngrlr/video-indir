@@ -62,11 +62,21 @@ document.addEventListener('DOMContentLoaded', () => {
             a.style.display = 'none';
             a.href = downloadUrl;
             a.download = data.filename;
+
+            // iOS PWA fix: Force opening in a new tab so the user doesn't get stuck on the native video player screen
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+
             document.body.appendChild(a);
             a.click();
             a.remove();
 
-            showStatus('İndirme tamamlandı!', 'success');
+            showStatus('İndirme tamamlandı! Yeni bir video indirebilirsiniz.', 'success');
+
+            // Clear inputs for convenience
+            urlInput.value = '';
+            startTimeInput.value = '';
+            endTimeInput.value = '';
         } catch (error) {
             console.error('Download error:', error);
             showStatus(error.message, 'error');
