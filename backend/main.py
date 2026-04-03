@@ -127,6 +127,14 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
         'noplaylist': True,
         'quiet': False,
         'js_runtimes': {'node': {}}, # Explicitly tell yt-dlp to use node JS runtime
+        'postprocessors': [{
+            'key': 'FFmpegVideoConvertor',
+            'preferedformat': 'mp4',
+        }],
+        'postprocessor_args': [
+            '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
+            '-c:a', 'aac'
+        ]
     }
 
     # Determine which cookie file to use based on URL
@@ -234,6 +242,14 @@ async def prepare_download(request: DownloadRequest):
         'noplaylist': True,
         'quiet': False,
         'js_runtimes': {'node': {}}, # Explicitly tell yt-dlp to use node JS runtime
+        'postprocessors': [{
+            'key': 'FFmpegVideoConvertor',
+            'preferedformat': 'mp4',
+        }],
+        'postprocessor_args': [
+            '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
+            '-c:a', 'aac'
+        ]
     }
 
     # Determine which cookie file to use based on URL
@@ -262,12 +278,24 @@ async def prepare_download(request: DownloadRequest):
         # Bu yöntem yt-dlp hook'larına kıyasla yollar ve tırnak işaretleriyle çok daha tutarlı çalışır.
         if request.start_time and request.end_time and final_filename and os.path.exists(final_filename):
             temp_filename = final_filename + ".temp.mp4"
+
+            # Helper to parse HH:MM:SS to seconds for accurate calculation
+            def parse_time(time_str):
+                parts = time_str.split(':')
+                if len(parts) == 3: return int(parts[0]) * 3600 + int(parts[1]) * 60 + float(parts[2])
+                elif len(parts) == 2: return int(parts[0]) * 60 + float(parts[1])
+                return float(parts[0])
+
+            start_sec = parse_time(request.start_time)
+            end_sec = parse_time(request.end_time)
+            duration_sec = end_sec - start_sec if end_sec > start_sec else 1
+
             import subprocess
             cmd = [
                 "ffmpeg", "-y",
                 "-ss", request.start_time,
                 "-i", final_filename,
-                "-to", request.end_time,
+                "-t", str(duration_sec),
                 "-c:v", "libx264", "-preset", "fast", "-crf", "23",
                 "-c:a", "aac", temp_filename
             ]
