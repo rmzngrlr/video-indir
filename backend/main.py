@@ -60,6 +60,54 @@ def remove_file(path: str):
     except Exception as e:
         print(f"Error removing file {path}: {e}")
 
+@app.post("/api/info")
+async def get_video_info(request: DownloadRequest):
+    if not request.url:
+        raise HTTPException(status_code=400, detail="URL is required")
+
+    ydl_opts = {
+        'noplaylist': True,
+        'quiet': True,
+        'js_runtimes': {'node': {}},
+    }
+
+    # Determine which cookie file to use based on URL
+    cookie_file = "cookies.txt" # fallback
+    if "instagram.com" in request.url.lower() and os.path.exists("instagram_cookies.txt"):
+        cookie_file = "instagram_cookies.txt"
+    elif "facebook.com" in request.url.lower() and os.path.exists("facebook_cookies.txt"):
+        cookie_file = "facebook_cookies.txt"
+    elif "youtube.com" in request.url.lower() and os.path.exists("youtube_cookies.txt"):
+        cookie_file = "youtube_cookies.txt"
+
+    if os.path.exists(cookie_file):
+        ydl_opts['cookiefile'] = cookie_file
+
+    try:
+        def run_yt_dlp(opts, url):
+            with yt_dlp.YoutubeDL(opts) as ydl:
+                return ydl.extract_info(url, download=False)
+
+        info_dict = await asyncio.to_thread(run_yt_dlp, ydl_opts, request.url)
+
+        return {
+            "title": info_dict.get('title', 'Bilinmeyen Video'),
+            "thumbnail": info_dict.get('thumbnail', ''),
+            "duration": info_dict.get('duration', 0)
+        }
+
+    except yt_dlp.utils.DownloadError as e:
+        error_msg = str(e)
+        if "ffmpeg is not installed" in error_msg.lower():
+            raise HTTPException(status_code=500, detail="FFmpeg kurulu değil! Lütfen README.md dosyasındaki kurulum adımlarını izleyin.")
+        if "confirm you’re not a bot" in error_msg.lower() or "confirm you're not a bot" in error_msg.lower():
+            raise HTTPException(status_code=400, detail="YouTube bot korumasına takıldınız! Çözüm için: Bilgisayarınızda YouTube'a girin, 'Get cookies.txt LOCALLY' eklentisiyle çerezleri indirin ve sunucudaki proje ana dizinine 'cookies.txt' adıyla kaydedip sunucuyu yeniden başlatın.")
+        if "login required" in error_msg.lower() or "rate-limit reached" in error_msg.lower():
+            raise HTTPException(status_code=400, detail="Instagram/Facebook giriş sınırına takıldınız! Çözüm: Bilgisayarınızda Instagram'a (veya Facebook'a) giriş yapın, 'Get cookies.txt LOCALLY' eklentisiyle çerezleri indirin ve sunucuya 'instagram_cookies.txt' (veya facebook_cookies.txt) adıyla kaydedip yeniden başlatın.")
+        raise HTTPException(status_code=400, detail=f"Bilgi alınamadı: {error_msg}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Beklenmeyen bir hata oluştu: {str(e)}")
+
 @app.post("/api/download")
 async def download_video(request: DownloadRequest, background_tasks: BackgroundTasks):
     if not request.url:
