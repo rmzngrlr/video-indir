@@ -1,9 +1,13 @@
 document.addEventListener('DOMContentLoaded', () => {
     const downloadBtn = document.getElementById('downloadBtn');
+    const confirmDownloadBtn = document.getElementById('confirmDownloadBtn');
     const urlInput = document.getElementById('url');
     const startTimeInput = document.getElementById('start_time');
     const endTimeInput = document.getElementById('end_time');
     const statusMessage = document.getElementById('statusMessage');
+    const videoInfoContainer = document.getElementById('videoInfoContainer');
+    const videoThumbnail = document.getElementById('videoThumbnail');
+    const videoTitle = document.getElementById('videoTitle');
 
     // Basic PWA Service Worker Registration
     if ('serviceWorker' in navigator) {
@@ -22,7 +26,61 @@ document.addEventListener('DOMContentLoaded', () => {
         statusMessage.className = 'status ' + type;
     }
 
+    // Reset the UI if the URL changes
+    urlInput.addEventListener('input', () => {
+        videoInfoContainer.style.display = 'none';
+        showStatus('', '');
+    });
+
     downloadBtn.addEventListener('click', async () => {
+        const url = urlInput.value.trim();
+
+        if (!url) {
+            showStatus('Lütfen bir video linki girin.', 'error');
+            return;
+        }
+
+        // Disable button & show loading
+        downloadBtn.disabled = true;
+        videoInfoContainer.style.display = 'none';
+        showStatus('Video aranıyor, lütfen bekleyin...', 'info');
+
+        try {
+            const response = await fetch('/api/info', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ url: url })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.detail || 'Video bulunamadı veya bir hata oluştu.');
+            }
+
+            const data = await response.json();
+
+            videoTitle.textContent = data.title;
+            if (data.thumbnail) {
+                videoThumbnail.src = data.thumbnail;
+                videoThumbnail.style.display = 'block';
+            } else {
+                videoThumbnail.style.display = 'none';
+            }
+
+            videoInfoContainer.style.display = 'block';
+            showStatus('Video bulundu! İndirmek için Şimdi İndir butonuna tıklayın.', 'success');
+
+        } catch (error) {
+            console.error('Info fetch error:', error);
+            showStatus(error.message, 'error');
+        } finally {
+            downloadBtn.disabled = false;
+        }
+    });
+
+    confirmDownloadBtn.addEventListener('click', async () => {
         const url = urlInput.value.trim();
         const startTime = startTimeInput.value.trim();
         const endTime = endTimeInput.value.trim();
@@ -32,9 +90,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Disable button & show loading
-        downloadBtn.disabled = true;
-        showStatus('İşlem başlatılıyor, lütfen bekleyin... (Bu işlem videonun uzunluğuna göre sürebilir)', 'info');
+        confirmDownloadBtn.disabled = true;
+        showStatus('İndirme hazırlanıyor, lütfen bekleyin... (Bu işlem videonun uzunluğuna göre sürebilir)', 'info');
 
         try {
             const payload = { url: url };
@@ -71,7 +128,8 @@ document.addEventListener('DOMContentLoaded', () => {
             a.click();
             a.remove();
 
-            showStatus('İndirme tamamlandı! Yeni bir video indirebilirsiniz.', 'success');
+            showStatus('İndirme tamamlandı! Yeni bir video arayabilirsiniz.', 'success');
+            videoInfoContainer.style.display = 'none';
 
             // Clear inputs for convenience
             urlInput.value = '';
@@ -81,7 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Download error:', error);
             showStatus(error.message, 'error');
         } finally {
-            downloadBtn.disabled = false;
+            confirmDownloadBtn.disabled = false;
         }
     });
 });
