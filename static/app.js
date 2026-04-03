@@ -8,6 +8,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const videoInfoContainer = document.getElementById('videoInfoContainer');
     const videoThumbnail = document.getElementById('videoThumbnail');
     const videoTitle = document.getElementById('videoTitle');
+    const showShortcutBtn = document.getElementById('showShortcutBtn');
+    const shortcutModal = document.getElementById('shortcutModal');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const apiEndpointUrl = document.getElementById('apiEndpointUrl');
+
+    let originalStartTime = null;
+    let originalEndTime = null;
 
     // Basic PWA Service Worker Registration
     if ('serviceWorker' in navigator) {
@@ -31,6 +38,26 @@ document.addEventListener('DOMContentLoaded', () => {
         videoInfoContainer.style.display = 'none';
         showStatus('', '');
     });
+
+    // Shortcut Modal Logic
+    if (showShortcutBtn && shortcutModal && closeModalBtn && apiEndpointUrl) {
+        showShortcutBtn.addEventListener('click', () => {
+            // Set the absolute URL dynamically based on where the app is hosted
+            apiEndpointUrl.value = window.location.origin + '/api/download';
+            shortcutModal.style.display = 'flex';
+        });
+
+        closeModalBtn.addEventListener('click', () => {
+            shortcutModal.style.display = 'none';
+        });
+
+        // Close modal if clicked outside of the content
+        window.addEventListener('click', (event) => {
+            if (event.target === shortcutModal) {
+                shortcutModal.style.display = 'none';
+            }
+        });
+    }
 
     downloadBtn.addEventListener('click', async () => {
         const url = urlInput.value.trim();
@@ -78,10 +105,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const formatTime = (time) => String(time).padStart(2, '0');
 
-                startTimeInput.value = "00:00:00";
-                endTimeInput.value = `${formatTime(hours)}:${formatTime(minutes)}:${formatTime(seconds)}`;
+                originalStartTime = "00:00:00";
+                originalEndTime = `${formatTime(hours)}:${formatTime(minutes)}:${formatTime(seconds)}`;
+
+                startTimeInput.value = originalStartTime;
+                endTimeInput.value = originalEndTime;
             } else {
                 // Uzunluk okunamadıysa varsayılan boş kalsın
+                originalStartTime = "";
+                originalEndTime = "";
                 startTimeInput.value = "";
                 endTimeInput.value = "";
             }
@@ -112,8 +144,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const payload = { url: url };
-            if (startTime) payload.start_time = startTime;
-            if (endTime) payload.end_time = endTime;
+
+            // Only send slice times if the user actually modified them
+            // This prevents full-video re-encoding when downloading the entire clip
+            if ((startTime && startTime !== originalStartTime) || (endTime && endTime !== originalEndTime)) {
+                payload.start_time = startTime;
+                payload.end_time = endTime;
+            }
 
             const response = await fetch('/api/prepare', {
                 method: 'POST',

@@ -164,6 +164,45 @@
     </div>
 
     <div class="status" id="statusMessage"></div>
+
+    <div style="margin-top: 30px; text-align: center;">
+        <button id="showShortcutBtn" style="background-color: #333; font-size: 14px; padding: 10px;">📱 iPhone Kestirme (Kısayol) Kurulumu</button>
+    </div>
+</div>
+
+<!-- Kestirme (Shortcut) Modal -->
+<div id="shortcutModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; padding: 20px;">
+    <div style="background-color: var(--card-bg); padding: 25px; border-radius: 12px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; position: relative;">
+        <span id="closeModalBtn" style="position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; color: #888;">&times;</span>
+        <h2 style="color: var(--primary); margin-bottom: 15px; font-size: 20px;">📱 iPhone'da Tek Tıkla Galeriye İndirin</h2>
+
+        <p style="font-size: 14px; line-height: 1.5; margin-bottom: 15px;">
+            Web tarayıcısından indirdiğiniz videolar Safari kısıtlamaları yüzünden doğrudan Film Rulosu'na (Galeriye) kaydedilmez. Ancak Apple <b>Kestirmeler (Shortcuts)</b> uygulamasıyla bu engeli tamamen aşabilirsiniz!
+        </p>
+
+        <h4 style="margin-bottom: 10px; color: #555;">Nasıl Kurulur?</h4>
+        <ol style="font-size: 13px; line-height: 1.6; padding-left: 20px; color: #444;">
+            <li>iPhone'unuzda <b>Kestirmeler</b> uygulamasını açın ve sağ üstteki <b>+</b> ikonuna basın.</li>
+            <li>Adını "Video İndirici" yapın.</li>
+            <li>Aşağıdaki arama çubuğuna <b>URL'nin İçeriğini Al (Get Contents of URL)</b> yazıp ekleyin.</li>
+            <li>Şu linki kopyalayıp URL kısmına yapıştırın:<br>
+                <input type="text" id="apiEndpointUrl" readonly style="width: 100%; margin: 8px 0; padding: 8px; font-size: 12px; background: #eee; border: 1px solid #ccc; border-radius: 4px;" value="Yükleniyor...">
+            </li>
+            <li><b>Daha Fazla (Ok işareti)</b> kısmını açın:
+                <ul style="margin-top: 5px;">
+                    <li><b>Yöntem (Method):</b> POST</li>
+                    <li><b>İstek Gövdesi (Request Body):</b> JSON</li>
+                    <li>Yeni bir alan (alan ekle) seçin: <b>Anahtar:</b> <code>url</code>, <b>Tür:</b> <code>Metin (Text)</code>, <b>Değer:</b> <code>(Kestirme Girdisi / Shortcut Input)</code></li>
+                </ul>
+            </li>
+            <li>Son olarak altına yeni bir işlem olarak <b>Fotoğraf Albümüne Kaydet (Save to Photo Album)</b> ekleyin.</li>
+            <li>Sağ üstten veya alttaki "i" (Bilgi) ikonundan <b>Paylaşım Sayfasında Göster (Show in Share Sheet)</b> seçeneğini aktif edin.</li>
+        </ol>
+
+        <p style="font-size: 13px; margin-top: 15px; font-weight: bold; color: #d9534f;">
+            🎉 Bitti! Artık Instagram veya YouTube'da bir videoyu paylaşırken "Kestirmeler -> Video İndirici" seçtiğiniz an video 5 saniyede doğrudan Galerinizde belirecek! (Web sitesini açmanıza gerek kalmaz).
+        </p>
+    </div>
 </div>
 
 <script src="/static/app.js"></script>
