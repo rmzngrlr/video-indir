@@ -1,4 +1,5 @@
 fastapi>=0.100.0
 uvicorn>=0.23.0
 yt-dlp>=2023.10.13
+yt-dlp-ejs>=0.3.0
 pydantic>=2.0.0
