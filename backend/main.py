@@ -150,6 +150,8 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
             raise HTTPException(status_code=500, detail="FFmpeg kurulu değil! Videoları birleştirmek veya kesmek için sunucuda FFmpeg'in kurulu ve ortam değişkenlerine (PATH) ekli olması gereklidir. Lütfen README.md dosyasındaki kurulum adımlarını izleyin.")
         if "confirm you’re not a bot" in error_msg.lower() or "confirm you're not a bot" in error_msg.lower():
             raise HTTPException(status_code=400, detail="YouTube bot korumasına takıldınız! Çözüm için: Bilgisayarınızda YouTube'a girin, 'Get cookies.txt LOCALLY' eklentisiyle çerezleri indirin ve sunucudaki proje ana dizinine 'cookies.txt' adıyla kaydedip sunucuyu yeniden başlatın.")
+        if "login required" in error_msg.lower() or "rate-limit reached" in error_msg.lower():
+            raise HTTPException(status_code=400, detail="Instagram/Facebook giriş zorunluluğuna veya sınırına takıldınız! Çözüm için: Kendi bilgisayarınızda ilgili siteye (Instagram vs) giriş yapın, 'Get cookies.txt LOCALLY' eklentisiyle çerezleri indirin ve sunucu dizinine 'cookies.txt' adıyla kaydedip sunucuyu yeniden başlatın.")
         raise HTTPException(status_code=400, detail=f"İndirme hatası: {error_msg}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Beklenmeyen bir hata oluştu: {str(e)}")
@@ -233,6 +235,8 @@ async def prepare_download(request: DownloadRequest):
             raise HTTPException(status_code=500, detail="FFmpeg kurulu değil! Videoları birleştirmek veya kesmek için sunucuda FFmpeg'in kurulu ve ortam değişkenlerine (PATH) ekli olması gereklidir. Lütfen README.md dosyasındaki kurulum adımlarını izleyin.")
         if "confirm you’re not a bot" in error_msg.lower() or "confirm you're not a bot" in error_msg.lower():
             raise HTTPException(status_code=400, detail="YouTube bot korumasına takıldınız! Çözüm için: Bilgisayarınızda YouTube'a girin, 'Get cookies.txt LOCALLY' eklentisiyle çerezleri indirin ve sunucudaki proje ana dizinine 'cookies.txt' adıyla kaydedip sunucuyu yeniden başlatın.")
+        if "login required" in error_msg.lower() or "rate-limit reached" in error_msg.lower():
+            raise HTTPException(status_code=400, detail="Instagram/Facebook giriş zorunluluğuna veya sınırına takıldınız! Çözüm için: Kendi bilgisayarınızda ilgili siteye (Instagram vs) giriş yapın, 'Get cookies.txt LOCALLY' eklentisiyle çerezleri indirin ve sunucu dizinine 'cookies.txt' adıyla kaydedip sunucuyu yeniden başlatın.")
         raise HTTPException(status_code=400, detail=f"İndirme hatası: {error_msg}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Beklenmeyen bir hata oluştu: {str(e)}")
