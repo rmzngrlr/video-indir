@@ -257,9 +257,12 @@ async def prepare_download(request: DownloadRequest):
             temp_filename = final_filename + ".temp.mp4"
             import subprocess
             cmd = [
-                "ffmpeg", "-y", "-i", final_filename,
-                "-ss", request.start_time, "-to", request.end_time,
-                "-c", "copy", temp_filename
+                "ffmpeg", "-y",
+                "-ss", request.start_time,
+                "-i", final_filename,
+                "-to", request.end_time,
+                "-c:v", "libx264", "-preset", "fast", "-crf", "23",
+                "-c:a", "aac", temp_filename
             ]
             try:
                 # Arka planda engellememesi için asyncio üzerinden çağırıyoruz
