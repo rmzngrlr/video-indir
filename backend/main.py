@@ -71,7 +71,8 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
 
     ydl_opts = {
         'outtmpl': output_template,
-        'format': 'bestvideo+bestaudio/best', # En iyi kaliteyi al, mp4/webm fark etmeksizin
+        # Sadece Apple/iOS (iPhone) cihazların yerel olarak desteklediği H.264 (avc) codec'ini zorlar
+        'format': 'bestvideo[vcodec^=avc]+bestaudio[ext=m4a]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
         'merge_output_format': 'mp4', # İndirme bitince mp4'e birleştir/dönüştür
         'noplaylist': True,
         'quiet': False,
@@ -149,7 +150,7 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
         return FileResponse(
             path=final_filename, 
             filename=download_name, 
-            media_type='application/octet-stream'
+            media_type='video/mp4'
         )
 
     except yt_dlp.utils.DownloadError as e:
@@ -174,7 +175,8 @@ async def prepare_download(request: DownloadRequest):
 
     ydl_opts = {
         'outtmpl': output_template,
-        'format': 'bestvideo+bestaudio/best', # En iyi kaliteyi al, mp4/webm fark etmeksizin
+        # Sadece Apple/iOS (iPhone) cihazların yerel olarak desteklediği H.264 (avc) codec'ini zorlar
+        'format': 'bestvideo[vcodec^=avc]+bestaudio[ext=m4a]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
         'merge_output_format': 'mp4', # İndirme bitince mp4'e birleştir/dönüştür
         'noplaylist': True,
         'quiet': False,
@@ -273,7 +275,7 @@ async def download_file(token: str, background_tasks: BackgroundTasks):
     return FileResponse(
         path=file_path, 
         filename="video" + os.path.splitext(token)[1],
-        media_type='application/octet-stream',
+        media_type='video/mp4',
         content_disposition_type='attachment'
     )
 
