@@ -83,6 +83,8 @@ async def get_video_info(request: DownloadRequest):
     if os.path.exists(cookie_file):
         ydl_opts['cookiefile'] = cookie_file
 
+    ydl_opts['socket_timeout'] = 30  # Timeout for slow network connections
+
     try:
         def run_yt_dlp(opts, url):
             with yt_dlp.YoutubeDL(opts) as ydl:
@@ -102,8 +104,8 @@ async def get_video_info(request: DownloadRequest):
             raise HTTPException(status_code=500, detail="FFmpeg kurulu değil! Lütfen README.md dosyasındaki kurulum adımlarını izleyin.")
         if "confirm you’re not a bot" in error_msg.lower() or "confirm you're not a bot" in error_msg.lower():
             raise HTTPException(status_code=400, detail="YouTube bot korumasına takıldınız! Çözüm için: Bilgisayarınızda YouTube'a girin, 'Get cookies.txt LOCALLY' eklentisiyle çerezleri indirin ve sunucudaki proje ana dizinine 'cookies.txt' adıyla kaydedip sunucuyu yeniden başlatın.")
-        if "login required" in error_msg.lower() or "rate-limit reached" in error_msg.lower():
-            raise HTTPException(status_code=400, detail="Instagram/Facebook giriş sınırına takıldınız! Çözüm: Bilgisayarınızda Instagram'a (veya Facebook'a) giriş yapın, 'Get cookies.txt LOCALLY' eklentisiyle çerezleri indirin ve sunucuya 'instagram_cookies.txt' (veya facebook_cookies.txt) adıyla kaydedip yeniden başlatın.")
+        if "login required" in error_msg.lower() or "rate-limit reached" in error_msg.lower() or "facebook.com/login" in error_msg.lower():
+            raise HTTPException(status_code=400, detail="Instagram/Facebook giriş sınırına takıldınız (veya çerezleriniz eksik/süresi geçmiş)! Çözüm: Bilgisayarınızda Instagram'a (veya Facebook'a) giriş yapın, 'Get cookies.txt LOCALLY' eklentisiyle çerezleri indirin ve sunucuya 'instagram_cookies.txt' (veya facebook_cookies.txt) adıyla kaydedip yeniden başlatın.")
         raise HTTPException(status_code=400, detail=f"Bilgi alınamadı: {error_msg}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Beklenmeyen bir hata oluştu: {str(e)}")
@@ -138,6 +140,8 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
 
     if os.path.exists(cookie_file):
         ydl_opts['cookiefile'] = cookie_file
+
+    ydl_opts['socket_timeout'] = 30  # Timeout for slow network connections
 
     # Helper to parse HH:MM:SS to seconds
     def parse_time(time_str):
@@ -207,8 +211,8 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
             raise HTTPException(status_code=500, detail="FFmpeg kurulu değil! Videoları birleştirmek veya kesmek için sunucuda FFmpeg'in kurulu ve ortam değişkenlerine (PATH) ekli olması gereklidir. Lütfen README.md dosyasındaki kurulum adımlarını izleyin.")
         if "confirm you’re not a bot" in error_msg.lower() or "confirm you're not a bot" in error_msg.lower():
             raise HTTPException(status_code=400, detail="YouTube bot korumasına takıldınız! Çözüm için: Bilgisayarınızda YouTube'a girin, 'Get cookies.txt LOCALLY' eklentisiyle çerezleri indirin ve sunucudaki proje ana dizinine 'cookies.txt' adıyla kaydedip sunucuyu yeniden başlatın.")
-        if "login required" in error_msg.lower() or "rate-limit reached" in error_msg.lower():
-            raise HTTPException(status_code=400, detail="Instagram/Facebook giriş sınırına takıldınız! Çözüm: Bilgisayarınızda Instagram'a (veya Facebook'a) giriş yapın, 'Get cookies.txt LOCALLY' eklentisiyle çerezleri indirin ve sunucuya 'instagram_cookies.txt' (veya facebook_cookies.txt) adıyla kaydedip yeniden başlatın.")
+        if "login required" in error_msg.lower() or "rate-limit reached" in error_msg.lower() or "facebook.com/login" in error_msg.lower():
+            raise HTTPException(status_code=400, detail="Instagram/Facebook giriş sınırına takıldınız (veya çerezleriniz eksik/süresi geçmiş)! Çözüm: Bilgisayarınızda Instagram'a (veya Facebook'a) giriş yapın, 'Get cookies.txt LOCALLY' eklentisiyle çerezleri indirin ve sunucuya 'instagram_cookies.txt' (veya facebook_cookies.txt) adıyla kaydedip yeniden başlatın.")
         raise HTTPException(status_code=400, detail=f"İndirme hatası: {error_msg}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Beklenmeyen bir hata oluştu: {str(e)}")
@@ -242,6 +246,8 @@ async def prepare_download(request: DownloadRequest):
 
     if os.path.exists(cookie_file):
         ydl_opts['cookiefile'] = cookie_file
+
+    ydl_opts['socket_timeout'] = 30  # Timeout for slow network connections
 
     try:
         def run_yt_dlp(opts, url):
@@ -304,8 +310,8 @@ async def prepare_download(request: DownloadRequest):
             raise HTTPException(status_code=500, detail="FFmpeg kurulu değil! Videoları birleştirmek veya kesmek için sunucuda FFmpeg'in kurulu ve ortam değişkenlerine (PATH) ekli olması gereklidir. Lütfen README.md dosyasındaki kurulum adımlarını izleyin.")
         if "confirm you’re not a bot" in error_msg.lower() or "confirm you're not a bot" in error_msg.lower():
             raise HTTPException(status_code=400, detail="YouTube bot korumasına takıldınız! Çözüm için: Bilgisayarınızda YouTube'a girin, 'Get cookies.txt LOCALLY' eklentisiyle çerezleri indirin ve sunucudaki proje ana dizinine 'cookies.txt' adıyla kaydedip sunucuyu yeniden başlatın.")
-        if "login required" in error_msg.lower() or "rate-limit reached" in error_msg.lower():
-            raise HTTPException(status_code=400, detail="Instagram/Facebook giriş sınırına takıldınız! Çözüm: Bilgisayarınızda Instagram'a (veya Facebook'a) giriş yapın, 'Get cookies.txt LOCALLY' eklentisiyle çerezleri indirin ve sunucuya 'instagram_cookies.txt' (veya facebook_cookies.txt) adıyla kaydedip yeniden başlatın.")
+        if "login required" in error_msg.lower() or "rate-limit reached" in error_msg.lower() or "facebook.com/login" in error_msg.lower():
+            raise HTTPException(status_code=400, detail="Instagram/Facebook giriş sınırına takıldınız (veya çerezleriniz eksik/süresi geçmiş)! Çözüm: Bilgisayarınızda Instagram'a (veya Facebook'a) giriş yapın, 'Get cookies.txt LOCALLY' eklentisiyle çerezleri indirin ve sunucuya 'instagram_cookies.txt' (veya facebook_cookies.txt) adıyla kaydedip yeniden başlatın.")
         raise HTTPException(status_code=400, detail=f"İndirme hatası: {error_msg}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Beklenmeyen bir hata oluştu: {str(e)}")
