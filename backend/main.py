@@ -202,7 +202,8 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
         return FileResponse(
             path=final_filename, 
             filename=download_name, 
-            media_type='video/mp4'
+            media_type='video/mp4',
+            content_disposition_type='attachment'
         )
 
     except yt_dlp.utils.DownloadError as e:
