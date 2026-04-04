@@ -160,10 +160,25 @@
             </div>
         </div>
 
+        <div class="form-group" style="text-align: left; margin-bottom: 20px;">
+            <label for="resolution_select">Kalite (Çözünürlük)</label>
+            <select id="resolution_select" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 16px; background-color: var(--input-bg); color: var(--text-color);">
+                <option value="best">Orijinal / En İyi</option>
+                <option value="720">720p</option>
+                <option value="480">480p</option>
+                <option value="360">360p</option>
+            </select>
+        </div>
+
         <button id="confirmDownloadBtn" style="background-color: #28a745;">Şimdi İndir</button>
     </div>
 
     <div class="status" id="statusMessage"></div>
+
+    <div id="progressContainer" style="display: none; margin-top: 15px; text-align: center;">
+        <progress id="downloadProgress" value="0" max="100" style="width: 100%; height: 20px; border-radius: 5px;"></progress>
+        <div id="progressText" style="margin-top: 5px; font-size: 14px; font-weight: bold; color: var(--primary);">%0</div>
+    </div>
 
     <div style="margin-top: 30px; text-align: center;">
         <button id="showShortcutBtn" style="background-color: #333; font-size: 14px; padding: 10px;">📱 iPhone Kestirme (Kısayol) Kurulumu</button>

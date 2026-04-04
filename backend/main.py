@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from typing import Optional
 import yt_dlp
 import socket
+import re
 
 def get_local_ip():
     try:
@@ -49,6 +50,10 @@ class DownloadRequest(BaseModel):
     url: str
     start_time: Optional[str] = None
     end_time: Optional[str] = None
+    client_id: Optional[str] = None
+    resolution: Optional[str] = None
+
+progress_store = {}
 
 def remove_file(path: str):
     """Background task to remove the file after it has been sent."""
@@ -64,6 +69,10 @@ def remove_file(path: str):
 async def get_video_info(request: DownloadRequest):
     if not request.url:
         raise HTTPException(status_code=400, detail="URL is required")
+
+    url_match = re.search(r'(https?://[^\s]+)', request.url)
+    if url_match:
+        request.url = url_match.group(1)
 
     ydl_opts = {
         'noplaylist': True,
@@ -115,18 +124,33 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
     if not request.url:
         raise HTTPException(status_code=400, detail="URL is required")
 
+    url_match = re.search(r'(https?://[^\s]+)', request.url)
+    if url_match:
+        request.url = url_match.group(1)
+
     # Unique filename base
     file_id = str(uuid.uuid4())
     output_template = os.path.join(DOWNLOAD_DIR, f"{file_id}.%(ext)s")
 
+    def progress_hook(d):
+        if request.client_id and d['status'] == 'downloading':
+            total = d.get('total_bytes') or d.get('total_bytes_estimate')
+            if total and total > 0:
+                percent = d.get('downloaded_bytes', 0) / total * 100
+                progress_store[request.client_id] = round(percent, 1)
+
+    format_str = 'bestvideo[vcodec^=avc]+bestaudio[ext=m4a]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best'
+
     ydl_opts = {
         'outtmpl': output_template,
         # Sadece Apple/iOS (iPhone) cihazların yerel olarak desteklediği H.264 (avc) codec'ini zorlar
-        'format': 'bestvideo[vcodec^=avc]+bestaudio[ext=m4a]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        'format': format_str,
         'merge_output_format': 'mp4', # İndirme bitince mp4'e birleştir/dönüştür
         'noplaylist': True,
         'quiet': False,
+        'updatetime': False, # Ensures the file gets the current date, not the original upload date (fixes gallery sorting)
         'js_runtimes': {'node': {}}, # Explicitly tell yt-dlp to use node JS runtime
+        'progress_hooks': [progress_hook],
         'postprocessors': [{
             'key': 'FFmpegVideoConvertor',
             'preferedformat': 'mp4',
@@ -231,25 +255,46 @@ async def prepare_download(request: DownloadRequest):
     if not request.url:
         raise HTTPException(status_code=400, detail="URL is required")
 
+    url_match = re.search(r'(https?://[^\s]+)', request.url)
+    if url_match:
+        request.url = url_match.group(1)
+
     file_id = str(uuid.uuid4())
     output_template = os.path.join(DOWNLOAD_DIR, f"{file_id}.%(ext)s")
+
+    def progress_hook(d):
+        if request.client_id and d['status'] == 'downloading':
+            total = d.get('total_bytes') or d.get('total_bytes_estimate')
+            if total and total > 0:
+                percent = d.get('downloaded_bytes', 0) / total * 100
+                progress_store[request.client_id] = round(percent, 1)
+
+    format_str = 'bestvideo[vcodec^=avc]+bestaudio[ext=m4a]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best'
+
+    if request.resolution and request.resolution != "best":
+        # Modify the format string to limit height (e.g. 720, 480, 360)
+        res = request.resolution
+        format_str = f'bestvideo[height<={res}][vcodec^=avc]+bestaudio[ext=m4a]/bestvideo[height<={res}][ext=mp4]+bestaudio[ext=m4a]/best[height<={res}][ext=mp4]/best[height<={res}]'
 
     ydl_opts = {
         'outtmpl': output_template,
         # Sadece Apple/iOS (iPhone) cihazların yerel olarak desteklediği H.264 (avc) codec'ini zorlar
-        'format': 'bestvideo[vcodec^=avc]+bestaudio[ext=m4a]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        'format': format_str,
         'merge_output_format': 'mp4', # İndirme bitince mp4'e birleştir/dönüştür
         'noplaylist': True,
         'quiet': False,
+        'updatetime': False, # Ensures the file gets the current date, not the original upload date (fixes gallery sorting)
         'js_runtimes': {'node': {}}, # Explicitly tell yt-dlp to use node JS runtime
+        'progress_hooks': [progress_hook],
         'postprocessors': [{
             'key': 'FFmpegVideoConvertor',
             'preferedformat': 'mp4',
         }],
-        'postprocessor_args': [
+        # Use dict format to explicitly apply args ONLY to the VideoConvertor
+        'postprocessor_args': {'FFmpegVideoConvertor': [
             '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
             '-c:a', 'aac'
-        ]
+        ]}
     }
 
     # Determine which cookie file to use based on URL
@@ -281,10 +326,12 @@ async def prepare_download(request: DownloadRequest):
 
             # Helper to parse HH:MM:SS to seconds for accurate calculation
             def parse_time(time_str):
+                if not time_str:
+                    return 0.0
                 parts = time_str.split(':')
                 if len(parts) == 3: return int(parts[0]) * 3600 + int(parts[1]) * 60 + float(parts[2])
                 elif len(parts) == 2: return int(parts[0]) * 60 + float(parts[1])
-                return float(parts[0])
+                return float(parts[0]) if parts[0] else 0.0
 
             start_sec = parse_time(request.start_time)
             end_sec = parse_time(request.end_time)
@@ -344,6 +391,10 @@ async def prepare_download(request: DownloadRequest):
         raise HTTPException(status_code=400, detail=f"İndirme hatası: {error_msg}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Beklenmeyen bir hata oluştu: {str(e)}")
+
+@app.get("/api/progress/{client_id}")
+async def get_progress(client_id: str):
+    return {"progress": progress_store.get(client_id, 0)}
 
 @app.get("/api/download_file/{token}")
 async def download_file(token: str, background_tasks: BackgroundTasks):
