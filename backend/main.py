@@ -156,7 +156,8 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
             'preferedformat': 'mp4',
         }],
         'postprocessor_args': [
-            '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
+            '-map_metadata', '-1',
+            '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23',
             '-c:a', 'aac'
         ]
     }
@@ -292,7 +293,8 @@ async def prepare_download(request: DownloadRequest):
         }],
         # Use dict format to explicitly apply args ONLY to the VideoConvertor
         'postprocessor_args': {'FFmpegVideoConvertor': [
-            '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
+            '-map_metadata', '-1',
+            '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23',
             '-c:a', 'aac'
         ]}
     }
@@ -343,7 +345,8 @@ async def prepare_download(request: DownloadRequest):
                 "-ss", request.start_time,
                 "-i", final_filename,
                 "-t", str(duration_sec),
-                "-c:v", "libx264", "-preset", "fast", "-crf", "23",
+                "-map_metadata", "-1",
+                "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
                 "-c:a", "aac", temp_filename
             ]
             try:
