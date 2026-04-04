@@ -1,9 +1,11 @@
-const CACHE_NAME = 'vid-down-v1';
+const CACHE_NAME = 'vid-down-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/static/index.html',
   '/static/app.js',
-  '/static/manifest.json'
+  '/static/manifest.json',
+  '/static/icon-192.png',
+  '/static/icon-512.png'
 ];
 
 self.addEventListener('install', (event) => {
@@ -12,6 +14,20 @@ self.addEventListener('install', (event) => {
       .then((cache) => {
         return cache.addAll(ASSETS_TO_CACHE);
       })
+  );
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
   );
 });
 
