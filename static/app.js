@@ -136,6 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const url = urlInput.value.trim();
         const startTime = startTimeInput.value.trim();
         const endTime = endTimeInput.value.trim();
+        const resolution = document.getElementById('resolution_select').value;
 
         if (!url) {
             showStatus('Lütfen bir video linki girin.', 'error');
@@ -153,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const clientId = Date.now().toString();
 
         try {
-            const payload = { url: url, client_id: clientId };
+            const payload = { url: url, client_id: clientId, resolution: resolution };
 
             progressInterval = setInterval(async () => {
                 try {

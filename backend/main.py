@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from typing import Optional
 import yt_dlp
 import socket
+import re
 
 def get_local_ip():
     try:
@@ -50,6 +51,7 @@ class DownloadRequest(BaseModel):
     start_time: Optional[str] = None
     end_time: Optional[str] = None
     client_id: Optional[str] = None
+    resolution: Optional[str] = None
 
 progress_store = {}
 
@@ -67,6 +69,10 @@ def remove_file(path: str):
 async def get_video_info(request: DownloadRequest):
     if not request.url:
         raise HTTPException(status_code=400, detail="URL is required")
+
+    url_match = re.search(r'(https?://[^\s]+)', request.url)
+    if url_match:
+        request.url = url_match.group(1)
 
     ydl_opts = {
         'noplaylist': True,
@@ -118,6 +124,10 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
     if not request.url:
         raise HTTPException(status_code=400, detail="URL is required")
 
+    url_match = re.search(r'(https?://[^\s]+)', request.url)
+    if url_match:
+        request.url = url_match.group(1)
+
     # Unique filename base
     file_id = str(uuid.uuid4())
     output_template = os.path.join(DOWNLOAD_DIR, f"{file_id}.%(ext)s")
@@ -129,13 +139,16 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
                 percent = d.get('downloaded_bytes', 0) / total * 100
                 progress_store[request.client_id] = round(percent, 1)
 
+    format_str = 'bestvideo[vcodec^=avc]+bestaudio[ext=m4a]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best'
+
     ydl_opts = {
         'outtmpl': output_template,
         # Sadece Apple/iOS (iPhone) cihazların yerel olarak desteklediği H.264 (avc) codec'ini zorlar
-        'format': 'bestvideo[vcodec^=avc]+bestaudio[ext=m4a]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        'format': format_str,
         'merge_output_format': 'mp4', # İndirme bitince mp4'e birleştir/dönüştür
         'noplaylist': True,
         'quiet': False,
+        'updatetime': False, # Ensures the file gets the current date, not the original upload date (fixes gallery sorting)
         'js_runtimes': {'node': {}}, # Explicitly tell yt-dlp to use node JS runtime
         'progress_hooks': [progress_hook],
         'postprocessors': [{
@@ -242,6 +255,10 @@ async def prepare_download(request: DownloadRequest):
     if not request.url:
         raise HTTPException(status_code=400, detail="URL is required")
 
+    url_match = re.search(r'(https?://[^\s]+)', request.url)
+    if url_match:
+        request.url = url_match.group(1)
+
     file_id = str(uuid.uuid4())
     output_template = os.path.join(DOWNLOAD_DIR, f"{file_id}.%(ext)s")
 
@@ -252,13 +269,21 @@ async def prepare_download(request: DownloadRequest):
                 percent = d.get('downloaded_bytes', 0) / total * 100
                 progress_store[request.client_id] = round(percent, 1)
 
+    format_str = 'bestvideo[vcodec^=avc]+bestaudio[ext=m4a]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best'
+
+    if request.resolution and request.resolution != "best":
+        # Modify the format string to limit height (e.g. 720, 480, 360)
+        res = request.resolution
+        format_str = f'bestvideo[height<={res}][vcodec^=avc]+bestaudio[ext=m4a]/bestvideo[height<={res}][ext=mp4]+bestaudio[ext=m4a]/best[height<={res}][ext=mp4]/best[height<={res}]'
+
     ydl_opts = {
         'outtmpl': output_template,
         # Sadece Apple/iOS (iPhone) cihazların yerel olarak desteklediği H.264 (avc) codec'ini zorlar
-        'format': 'bestvideo[vcodec^=avc]+bestaudio[ext=m4a]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        'format': format_str,
         'merge_output_format': 'mp4', # İndirme bitince mp4'e birleştir/dönüştür
         'noplaylist': True,
         'quiet': False,
+        'updatetime': False, # Ensures the file gets the current date, not the original upload date (fixes gallery sorting)
         'js_runtimes': {'node': {}}, # Explicitly tell yt-dlp to use node JS runtime
         'progress_hooks': [progress_hook],
         'postprocessors': [{
