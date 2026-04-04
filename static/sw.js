@@ -1,11 +1,12 @@
-const CACHE_NAME = 'vid-down-v2';
+const CACHE_NAME = 'vid-down-v3';
 const ASSETS_TO_CACHE = [
   '/',
   '/static/index.html',
   '/static/app.js',
   '/static/manifest.json',
   '/static/icon-192.png',
-  '/static/icon-512.png'
+  '/static/icon-512.png',
+  '/sw.js'
 ];
 
 self.addEventListener('install', (event) => {
