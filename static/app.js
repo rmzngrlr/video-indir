@@ -31,6 +31,33 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Android Web Share Target Handle
+    const parsedUrl = new URL(window.location);
+    const sharedUrl = parsedUrl.searchParams.get('url');
+    const sharedText = parsedUrl.searchParams.get('text');
+    const sharedTitle = parsedUrl.searchParams.get('title');
+
+    // Extract a possible URL from shared text or use the shared url parameter
+    let extractedUrl = sharedUrl || '';
+    if (!extractedUrl && sharedText) {
+        const urlMatch = sharedText.match(/(https?:\/\/[^\s]+)/);
+        if (urlMatch) {
+            extractedUrl = urlMatch[1];
+        }
+    }
+
+    if (extractedUrl) {
+        urlInput.value = extractedUrl;
+
+        // Clean the URL bar so if they refresh it doesn't trigger again
+        window.history.replaceState({}, document.title, "/");
+
+        // Automatically click the "Find Video" button
+        setTimeout(() => {
+            downloadBtn.click();
+        }, 300);
+    }
+
     function showStatus(message, type) {
         statusMessage.textContent = message;
         statusMessage.className = 'status ' + type;
