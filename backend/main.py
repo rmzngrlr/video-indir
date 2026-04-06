@@ -423,6 +423,3 @@ async def download_file(token: str, background_tasks: BackgroundTasks):
 def serve_index():
     return FileResponse("static/index.html")
 
-@app.get("/sw.js")
-def serve_sw():
-    return FileResponse("static/sw.js", media_type="application/javascript")
