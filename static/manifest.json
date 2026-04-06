@@ -2,8 +2,7 @@
   "name": "PWA Video Downloader",
   "short_name": "VidDown",
   "description": "Download videos or clips from social media platforms.",
-  "start_url": "/?source=pwa",
-  "scope": "/",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#f4f7f6",
   "theme_color": "#4A90E2",
@@ -20,14 +19,5 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ],
-  "share_target": {
-    "action": "/",
-    "method": "GET",
-    "params": {
-      "title": "title",
-      "text": "text",
-      "url": "url"
-    }
-  }
+  ]
 }

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vid-down-v3';
+const CACHE_NAME = 'vid-down-v4';
 const ASSETS_TO_CACHE = [
   '/',
   '/static/index.html',
