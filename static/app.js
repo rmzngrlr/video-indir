@@ -75,6 +75,11 @@ document.addEventListener('DOMContentLoaded', () => {
         videoInfoContainer.style.display = 'none';
         showStatus('Video aranıyor, lütfen bekleyin...', 'info');
 
+        // Show indeterminate progress bar
+        progressContainer.style.display = 'block';
+        downloadProgress.removeAttribute('value'); // makes it indeterminate
+        progressText.textContent = 'Aranıyor...';
+
         try {
             const response = await fetch('/api/info', {
                 method: 'POST',
@@ -123,10 +128,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             videoInfoContainer.style.display = 'block';
             showStatus('Video bulundu! İndirmek için Şimdi İndir butonuna tıklayın.', 'success');
+            progressContainer.style.display = 'none';
 
         } catch (error) {
             console.error('Info fetch error:', error);
             showStatus(error.message, 'error');
+            progressContainer.style.display = 'none';
         } finally {
             downloadBtn.disabled = false;
         }
@@ -147,7 +154,8 @@ document.addEventListener('DOMContentLoaded', () => {
         showStatus('İndirme hazırlanıyor, lütfen bekleyin... (Bu işlem videonun uzunluğuna göre sürebilir)', 'info');
 
         progressContainer.style.display = 'block';
-        downloadProgress.value = 0;
+        // Set it back to a determinate state just in case it was indeterminate
+        downloadProgress.setAttribute('value', '0');
         progressText.textContent = '%0';
 
         let progressInterval;
