@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vid-down-v4';
+const CACHE_NAME = 'vid-down-v5';
 const ASSETS_TO_CACHE = [
   '/',
   '/static/index.html',
@@ -10,6 +10,7 @@ const ASSETS_TO_CACHE = [
 ];
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting(); // Force update the SW immediately
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
@@ -19,6 +20,7 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
+  event.waitUntil(clients.claim()); // Take control of the page immediately
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
@@ -36,7 +38,7 @@ self.addEventListener('fetch', (event) => {
   // We only want to cache GET requests for static assets, not API calls
   if (event.request.method === 'GET' && !event.request.url.includes('/api/')) {
     event.respondWith(
-      caches.match(event.request)
+      caches.match(event.request, { ignoreSearch: true })
         .then((response) => {
           return response || fetch(event.request);
         })
