@@ -1,6 +1,7 @@
-const CACHE_NAME = 'vid-down-v6';
+const CACHE_NAME = 'vid-down-v7';
 const ASSETS_TO_CACHE = [
   '/',
+  '/?source=pwa',
   '/static/index.html',
   '/static/app.js',
   '/static/manifest.json'
@@ -35,7 +36,7 @@ self.addEventListener('fetch', (event) => {
   // We only want to cache GET requests for static assets, not API calls
   if (event.request.method === 'GET' && !event.request.url.includes('/api/')) {
     event.respondWith(
-      caches.match(event.request)
+      caches.match(event.request, { ignoreSearch: true })
         .then((response) => {
           return response || fetch(event.request);
         })
