@@ -1,10 +1,12 @@
-const CACHE_NAME = 'vid-down-v7';
+const CACHE_NAME = 'vid-down-v8';
 const ASSETS_TO_CACHE = [
   '/',
-  '/?source=pwa',
+  '/?v=8',
   '/static/index.html',
   '/static/app.js',
-  '/static/manifest.json'
+  '/static/manifest.json',
+  '/static/icon-192.png',
+  '/static/icon-512.png'
 ];
 
 self.addEventListener('install', (event) => {
@@ -33,12 +35,18 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // We only want to cache GET requests for static assets, not API calls
   if (event.request.method === 'GET' && !event.request.url.includes('/api/')) {
+    // Network-First Strategy: Ensures the app updates immediately upon reloading
     event.respondWith(
-      caches.match(event.request, { ignoreSearch: true })
-        .then((response) => {
-          return response || fetch(event.request);
+      fetch(event.request)
+        .then((networkResponse) => {
+          return caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, networkResponse.clone());
+            return networkResponse;
+          });
+        })
+        .catch(() => {
+          return caches.match(event.request, { ignoreSearch: true });
         })
     );
   }
