@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Basic PWA Service Worker Registration
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js', {scope: '/'})
+            navigator.serviceWorker.register('/static/sw.js')
                 .then(registration => {
                     console.log('ServiceWorker registration successful with scope: ', registration.scope);
                 }, err => {
