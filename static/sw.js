@@ -1,7 +1,7 @@
-const CACHE_NAME = 'vid-down-v8';
+const CACHE_NAME = 'vid-down-v9';
 const ASSETS_TO_CACHE = [
   '/',
-  '/?v=8',
+  '/?source=pwa',
   '/static/index.html',
   '/static/app.js',
   '/static/manifest.json',
