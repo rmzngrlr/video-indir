@@ -10,7 +10,13 @@
     }
   },
   "background": {
-    "service_worker": "background.js"
+    "scripts": ["background.js"]
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "viddown-extension@viddown.app",
+      "strict_min_version": "109.0"
+    }
   },
   "permissions": [
     "activeTab",

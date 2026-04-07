@@ -204,22 +204,32 @@ document.addEventListener('DOMContentLoaded', () => {
             clearInterval(progressInterval);
             progressContainer.style.display = 'none';
 
+            const files = data.files || [{token: data.token, filename: data.filename}];
+
             // Trigger download via GET navigation to avoid OOM crashes entirely
-            const downloadUrl = `/api/download_file/${data.token}`;
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = downloadUrl;
-            a.download = data.filename;
+            files.forEach((file, index) => {
+                setTimeout(() => {
+                    const downloadUrl = `/api/download_file/${file.token}`;
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = downloadUrl;
+                    a.download = file.filename;
 
-            // iOS PWA fix: Force opening in a new tab so the user doesn't get stuck on the native video player screen
-            a.target = '_blank';
-            a.rel = 'noopener noreferrer';
+                    // iOS PWA fix: Force opening in a new tab so the user doesn't get stuck on the native video player screen
+                    a.target = '_blank';
+                    a.rel = 'noopener noreferrer';
 
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                }, index * 1000); // 1 second delay between downloads to prevent popup blockers
+            });
 
-            showStatus('İndirme tamamlandı! Yeni bir video arayabilirsiniz.', 'success');
+            if (files.length > 1) {
+                showStatus(`${files.length} video bulundu ve indiriliyor!`, 'success');
+            } else {
+                showStatus('İndirme tamamlandı! Yeni bir video arayabilirsiniz.', 'success');
+            }
             videoInfoContainer.style.display = 'none';
 
             // Clear inputs for convenience
