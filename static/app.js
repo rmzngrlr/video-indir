@@ -105,8 +105,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.videos && data.videos.length > 1) {
                 // Multi-video post
                 isPlaylist = true;
-                videoThumbnail.style.display = 'none'; // Hide single thumbnail
-                timeInputsContainer.style.display = 'none'; // Disable trimming for multi-video
+                if (videoThumbnail) videoThumbnail.style.display = 'none'; // Hide single thumbnail
+                if (timeInputsContainer) timeInputsContainer.style.display = 'none'; // Disable trimming for multi-video
 
                 // Render checklist
                 playlistItems.innerHTML = '';
@@ -143,15 +143,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     playlistItems.appendChild(div);
                 });
 
-                playlistContainer.style.display = 'block';
+                if (playlistContainer) playlistContainer.style.display = 'block';
 
             } else {
                 // Single video
                 isPlaylist = false;
-                playlistContainer.style.display = 'none';
-                timeInputsContainer.style.display = 'flex';
+                if (playlistContainer) playlistContainer.style.display = 'none';
+                if (timeInputsContainer) timeInputsContainer.style.display = 'flex';
 
-                if (data.thumbnail) {
+                if (data.thumbnail && videoThumbnail) {
                     videoThumbnail.src = data.thumbnail;
                     videoThumbnail.style.display = 'block';
                 } else {
