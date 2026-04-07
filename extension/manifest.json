@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "VidDown (Video Downloader)",
+  "version": "1.0",
+  "description": "Mevcut sayfadaki videoyu doğrudan VidDown sunucunuz üzerinden indirir.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "48": "icon.png"
+    }
+  },
+  "permissions": [
+    "activeTab",
+    "storage",
+    "downloads"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "icons": {
+    "48": "icon.png",
+    "128": "icon.png"
+  }
+}
