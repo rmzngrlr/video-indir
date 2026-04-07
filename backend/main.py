@@ -226,6 +226,72 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
              if not found:
                  raise HTTPException(status_code=500, detail="Download failed, file not found.")
 
+        if final_filename and os.path.exists(final_filename):
+            temp_filename = final_filename + ".temp.mp4"
+            import subprocess
+            cmd = []
+
+            if request.start_time and request.end_time:
+                # Helper to parse HH:MM:SS to seconds for accurate calculation
+                def parse_time(time_str):
+                    if not time_str:
+                        return 0.0
+                    parts = time_str.split(':')
+                    if len(parts) == 3: return int(parts[0]) * 3600 + int(parts[1]) * 60 + float(parts[2])
+                    elif len(parts) == 2: return int(parts[0]) * 60 + float(parts[1])
+                    return float(parts[0]) if parts[0] else 0.0
+
+                start_sec = parse_time(request.start_time)
+                end_sec = parse_time(request.end_time)
+                duration_sec = end_sec - start_sec if end_sec > start_sec else 1
+
+                cmd = [
+                    "ffmpeg", "-y",
+                    "-ss", request.start_time,
+                    "-i", final_filename,
+                    "-t", str(duration_sec),
+                    "-map_metadata", "-1",
+                    "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+                    "-c:a", "aac", temp_filename
+                ]
+            else:
+                # Eğer kırpma (trim) yoksa sadece metadata'yı siliyoruz
+                cmd = [
+                    "ffmpeg", "-y",
+                    "-i", final_filename,
+                    "-map_metadata", "-1",
+                    "-c", "copy", temp_filename
+                ]
+
+            try:
+                # Arka planda engellememesi için asyncio üzerinden çağırıyoruz
+                proc = await asyncio.create_subprocess_exec(
+                    *cmd,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE
+                )
+                stdout, stderr = await proc.communicate()
+
+                if proc.returncode == 0 and os.path.exists(temp_filename):
+                    # Orijinal dosyayı silip kesilmiş/temizlenmiş dosyayı orijinal ismiyle kaydediyoruz.
+                    os.replace(temp_filename, final_filename)
+                else:
+                    print(f"FFmpeg clipping failed: {stderr.decode()}")
+            except Exception as e:
+                print(f"Error executing FFmpeg: {e}")
+                if os.path.exists(temp_filename):
+                    os.remove(temp_filename)
+
+        if not final_filename or not os.path.exists(final_filename):
+             found = False
+             for f in os.listdir(DOWNLOAD_DIR):
+                 if f.startswith(file_id):
+                     final_filename = os.path.join(DOWNLOAD_DIR, f)
+                     found = True
+                     break
+             if not found:
+                 raise HTTPException(status_code=500, detail="Download failed, file not found.")
+
         # Schedule file deletion after it's sent
         background_tasks.add_task(remove_file, final_filename)
 
@@ -323,32 +389,43 @@ async def prepare_download(request: DownloadRequest):
 
         # Eğer kesit (clipping) isteniyorsa, yt-dlp işleminin bitmesinin ardından Python ile FFmpeg'i çağırıyoruz.
         # Bu yöntem yt-dlp hook'larına kıyasla yollar ve tırnak işaretleriyle çok daha tutarlı çalışır.
-        if request.start_time and request.end_time and final_filename and os.path.exists(final_filename):
+        if final_filename and os.path.exists(final_filename):
             temp_filename = final_filename + ".temp.mp4"
-
-            # Helper to parse HH:MM:SS to seconds for accurate calculation
-            def parse_time(time_str):
-                if not time_str:
-                    return 0.0
-                parts = time_str.split(':')
-                if len(parts) == 3: return int(parts[0]) * 3600 + int(parts[1]) * 60 + float(parts[2])
-                elif len(parts) == 2: return int(parts[0]) * 60 + float(parts[1])
-                return float(parts[0]) if parts[0] else 0.0
-
-            start_sec = parse_time(request.start_time)
-            end_sec = parse_time(request.end_time)
-            duration_sec = end_sec - start_sec if end_sec > start_sec else 1
-
             import subprocess
-            cmd = [
-                "ffmpeg", "-y",
-                "-ss", request.start_time,
-                "-i", final_filename,
-                "-t", str(duration_sec),
-                "-map_metadata", "-1",
-                "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
-                "-c:a", "aac", temp_filename
-            ]
+            cmd = []
+
+            if request.start_time and request.end_time:
+                # Helper to parse HH:MM:SS to seconds for accurate calculation
+                def parse_time(time_str):
+                    if not time_str:
+                        return 0.0
+                    parts = time_str.split(':')
+                    if len(parts) == 3: return int(parts[0]) * 3600 + int(parts[1]) * 60 + float(parts[2])
+                    elif len(parts) == 2: return int(parts[0]) * 60 + float(parts[1])
+                    return float(parts[0]) if parts[0] else 0.0
+
+                start_sec = parse_time(request.start_time)
+                end_sec = parse_time(request.end_time)
+                duration_sec = end_sec - start_sec if end_sec > start_sec else 1
+
+                cmd = [
+                    "ffmpeg", "-y",
+                    "-ss", request.start_time,
+                    "-i", final_filename,
+                    "-t", str(duration_sec),
+                    "-map_metadata", "-1",
+                    "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+                    "-c:a", "aac", temp_filename
+                ]
+            else:
+                # Eğer kırpma (trim) yoksa sadece metadata'yı siliyoruz
+                cmd = [
+                    "ffmpeg", "-y",
+                    "-i", final_filename,
+                    "-map_metadata", "-1",
+                    "-c", "copy", temp_filename
+                ]
+
             try:
                 # Arka planda engellememesi için asyncio üzerinden çağırıyoruz
                 proc = await asyncio.create_subprocess_exec(
@@ -359,7 +436,7 @@ async def prepare_download(request: DownloadRequest):
                 stdout, stderr = await proc.communicate()
                 
                 if proc.returncode == 0 and os.path.exists(temp_filename):
-                    # Orijinal dosyayı silip kesilmiş dosyayı orijinal ismiyle kaydediyoruz.
+                    # Orijinal dosyayı silip kesilmiş/temizlenmiş dosyayı orijinal ismiyle kaydediyoruz.
                     os.replace(temp_filename, final_filename)
                 else:
                     print(f"FFmpeg clipping failed: {stderr.decode()}")
