@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 import yt_dlp
 import socket
 import re
@@ -52,6 +52,7 @@ class DownloadRequest(BaseModel):
     end_time: Optional[str] = None
     client_id: Optional[str] = None
     resolution: Optional[str] = None
+    selected_indices: Optional[List[int]] = None
 
 progress_store = {}
 
@@ -75,7 +76,7 @@ async def get_video_info(request: DownloadRequest):
         request.url = url_match.group(1)
 
     ydl_opts = {
-        'noplaylist': True,
+        'noplaylist': False, # Now allow playlist parsing to count videos
         'quiet': True,
         'js_runtimes': {'node': {}},
     }
@@ -101,10 +102,30 @@ async def get_video_info(request: DownloadRequest):
 
         info_dict = await asyncio.to_thread(run_yt_dlp, ydl_opts, request.url)
 
+        videos = []
+        if 'entries' in info_dict:
+            # It's a playlist or a multi-video post
+            for idx, entry in enumerate(info_dict['entries']):
+                if entry:
+                    videos.append({
+                        "index": idx + 1,
+                        "title": entry.get('title', f'Video {idx + 1}'),
+                        "thumbnail": entry.get('thumbnail', ''),
+                        "duration": entry.get('duration', 0)
+                    })
+        else:
+            videos.append({
+                "index": 1,
+                "title": info_dict.get('title', 'Bilinmeyen Video'),
+                "thumbnail": info_dict.get('thumbnail', ''),
+                "duration": info_dict.get('duration', 0)
+            })
+
         return {
             "title": info_dict.get('title', 'Bilinmeyen Video'),
             "thumbnail": info_dict.get('thumbnail', ''),
-            "duration": info_dict.get('duration', 0)
+            "duration": info_dict.get('duration', 0),
+            "videos": videos
         }
 
     except yt_dlp.utils.DownloadError as e:
@@ -151,16 +172,21 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
         'updatetime': False, # Ensures the file gets the current date, not the original upload date (fixes gallery sorting)
         'js_runtimes': {'node': {}}, # Explicitly tell yt-dlp to use node JS runtime
         'progress_hooks': [progress_hook],
-        'postprocessors': [{
-            'key': 'FFmpegVideoConvertor',
-            'preferedformat': 'mp4',
-        }],
-        'postprocessor_args': [
-            '-map_metadata', '-1',
-            '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23',
-            '-c:a', 'aac'
-        ]
     }
+
+    if request.selected_indices:
+        ydl_opts['playlist_items'] = ','.join(map(str, request.selected_indices))
+
+    # Optional postprocessors mapping
+    ydl_opts['postprocessors'] = [{
+        'key': 'FFmpegVideoConvertor',
+        'preferedformat': 'mp4',
+    }]
+    ydl_opts['postprocessor_args'] = {'FFmpegVideoConvertor': [
+        '-map_metadata', '-1',
+        '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23',
+        '-c:a', 'aac'
+    ]}
 
     # Determine which cookie file to use based on URL
     cookie_file = "cookies.txt" # fallback
@@ -343,17 +369,21 @@ async def prepare_download(request: DownloadRequest):
         'updatetime': False, # Ensures the file gets the current date, not the original upload date (fixes gallery sorting)
         'js_runtimes': {'node': {}}, # Explicitly tell yt-dlp to use node JS runtime
         'progress_hooks': [progress_hook],
-        'postprocessors': [{
-            'key': 'FFmpegVideoConvertor',
-            'preferedformat': 'mp4',
-        }],
-        # Use dict format to explicitly apply args ONLY to the VideoConvertor
-        'postprocessor_args': {'FFmpegVideoConvertor': [
-            '-map_metadata', '-1',
-            '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23',
-            '-c:a', 'aac'
-        ]}
     }
+
+    if request.selected_indices:
+        ydl_opts['playlist_items'] = ','.join(map(str, request.selected_indices))
+
+    # Optional postprocessors mapping
+    ydl_opts['postprocessors'] = [{
+        'key': 'FFmpegVideoConvertor',
+        'preferedformat': 'mp4',
+    }]
+    ydl_opts['postprocessor_args'] = {'FFmpegVideoConvertor': [
+        '-map_metadata', '-1',
+        '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23',
+        '-c:a', 'aac'
+    ]}
 
     # Determine which cookie file to use based on URL
     cookie_file = "cookies.txt" # fallback
