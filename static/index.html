@@ -187,8 +187,36 @@
         <div id="progressText" style="margin-top: 5px; font-size: 14px; font-weight: bold; color: var(--primary);">%0</div>
     </div>
 
-    <div style="margin-top: 30px; text-align: center;">
+    <div style="margin-top: 30px; text-align: center; display: flex; flex-direction: column; gap: 10px;">
         <button id="showShortcutBtn" style="background-color: #333; font-size: 14px; padding: 10px;">📱 iPhone Kestirme (Kısayol) Kurulumu</button>
+        <button id="showChromeExtBtn" style="background-color: #e5a910; color: #333; font-size: 14px; padding: 10px;">💻 Chrome Eklentisi İndir & Kur</button>
+    </div>
+</div>
+
+<!-- Chrome Extension Modal -->
+<div id="chromeExtModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; padding: 20px;">
+    <div style="background-color: var(--card-bg); padding: 25px; border-radius: 12px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; position: relative;">
+        <span id="closeChromeModalBtn" style="position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; color: #888;">&times;</span>
+        <h2 style="color: #e5a910; margin-bottom: 15px; font-size: 20px;">💻 Chrome / Edge Eklentisi Kurulumu</h2>
+
+        <p style="font-size: 14px; line-height: 1.5; margin-bottom: 15px;">
+            Siteden ayrılmadan tek tıkla arka planda indirme yapabilmek için bilgisayarınızdaki Google Chrome tarayıcısına VidDown eklentisini kurabilirsiniz!
+        </p>
+
+        <a href="/api/download_extension" style="display: block; text-align: center; background-color: #e5a910; color: #333; padding: 12px; border-radius: 8px; font-weight: bold; text-decoration: none; margin-bottom: 20px;">📥 Eklentiyi (.zip) Olarak İndir</a>
+
+        <h4 style="margin-bottom: 10px; color: #555;">Nasıl Kurulur?</h4>
+        <ol style="font-size: 13px; line-height: 1.6; padding-left: 20px; color: #444;">
+            <li>Yukarıdaki butondan eklentiyi indirin ve <b>ZIP dosyasını klasöre çıkartın</b>.</li>
+            <li>Google Chrome adres çubuğuna <code style="background: #eee; padding: 2px 4px; border-radius: 4px;">chrome://extensions/</code> yazıp girin.</li>
+            <li>Sağ üst köşedeki <b>Geliştirici Modu (Developer mode)</b> anahtarını açın.</li>
+            <li>Sol üstte beliren <b>Paketlenmemiş öğe yükle (Load unpacked)</b> butonuna basın.</li>
+            <li>İndirip ZIP'ten çıkardığınız <b>"extension"</b> klasörünü seçin. </li>
+        </ol>
+
+        <p style="font-size: 13px; margin-top: 15px; font-weight: bold; color: #28a745;">
+            🎉 Tebrikler! Eklentiyi sağ üstte göreceksiniz. İlk açtığınızda "Sunucu Ayarları" menüsünden adresinizin doğru olduğundan emin olun.
+        </p>
     </div>
 </div>
 
