@@ -140,6 +140,94 @@ async def get_video_info(request: DownloadRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Beklenmeyen bir hata oluştu: {str(e)}")
 
+@app.post("/api/shortcut_download")
+async def shortcut_download_video(request: DownloadRequest, background_tasks: BackgroundTasks):
+    """
+    iOS Shortcuts endpoint that returns the actual MP4 file directly
+    instead of JSON, so the shortcut can save it straight to the camera roll.
+    """
+    if not request.url:
+        raise HTTPException(status_code=400, detail="URL is required")
+
+    url_match = re.search(r'(https?://[^\s]+)', request.url)
+    if url_match:
+        request.url = url_match.group(1)
+
+    file_id = str(uuid.uuid4())
+    output_template = os.path.join(DOWNLOAD_DIR, f"{file_id}_%(id)s.%(ext)s")
+
+    format_str = 'bestvideo[vcodec^=avc]+bestaudio[ext=m4a]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best'
+
+    ydl_opts = {
+        'outtmpl': output_template,
+        'format': format_str,
+        'merge_output_format': 'mp4',
+        'noplaylist': True,
+        'quiet': False,
+        'updatetime': False,
+        'js_runtimes': {'node': {}},
+        'postprocessors': [{
+            'key': 'FFmpegVideoConvertor',
+            'preferedformat': 'mp4',
+        },
+        {
+            'key': 'FFmpegMetadata',
+            'add_metadata': False,
+        }],
+        'postprocessor_args': {
+            'FFmpegMetadata': ['-map_metadata', '-1', '-preset', 'ultrafast']
+        }
+    }
+
+    cookie_file = None
+    if "instagram.com" in request.url.lower() and os.path.exists("instagram_cookies.txt"):
+        cookie_file = "instagram_cookies.txt"
+    elif "facebook.com" in request.url.lower() and os.path.exists("facebook_cookies.txt"):
+        cookie_file = "facebook_cookies.txt"
+
+    if cookie_file:
+        ydl_opts['cookiefile'] = cookie_file
+
+    # Set fake user-agent for Instagram to prevent bot-blocking
+    if "instagram.com" in request.url.lower():
+        ydl_opts['http_headers'] = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+
+    try:
+        def extract_and_download():
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(request.url, download=True)
+                return info
+
+        info = await asyncio.to_thread(extract_and_download)
+
+        # Determine final filename
+        downloaded_file = None
+        for file in os.listdir(DOWNLOAD_DIR):
+            if file.startswith(file_id):
+                downloaded_file = os.path.join(DOWNLOAD_DIR, file)
+                break
+
+        if not downloaded_file or not os.path.exists(downloaded_file):
+            raise HTTPException(status_code=500, detail="Video indirilemedi.")
+
+        background_tasks.add_task(remove_file, downloaded_file)
+
+        return FileResponse(
+            path=downloaded_file,
+            filename="video.mp4",
+            media_type='video/mp4',
+            content_disposition_type='attachment'
+        )
+    except yt_dlp.utils.DownloadError as e:
+        error_msg = str(e)
+        if "Sign in to confirm you're not a bot" in error_msg or "login" in error_msg.lower():
+            raise HTTPException(status_code=400, detail="Instagram/Facebook giriş sınırına takıldınız (veya çerezleriniz eksik/süresi geçmiş)! Çözüm: Bilgisayarınızda Instagram'a (veya Facebook'a) giriş yapın, 'Get cookies.txt LOCALLY' eklentisiyle çerezleri indirin ve sunucuya 'instagram_cookies.txt' (veya facebook_cookies.txt) adıyla kaydedip yeniden başlatın.")
+        raise HTTPException(status_code=400, detail=f"İndirme hatası: {error_msg}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Beklenmeyen bir hata oluştu: {str(e)}")
+
 @app.post("/api/download")
 async def download_video(request: DownloadRequest, background_tasks: BackgroundTasks):
     if not request.url:
@@ -520,6 +608,26 @@ async def download_file(token: str, background_tasks: BackgroundTasks):
         filename="video" + os.path.splitext(token)[1],
         media_type='video/mp4',
         content_disposition_type='attachment'
+    )
+
+@app.get("/api/download_extension")
+def download_chrome_extension():
+    import shutil
+    import os
+
+    extension_dir = "extension"
+    zip_path = os.path.join(DOWNLOAD_DIR, "viddown_chrome_extension")
+
+    if not os.path.exists(extension_dir):
+        raise HTTPException(status_code=404, detail="Eklenti klasörü bulunamadı.")
+
+    shutil.make_archive(zip_path, 'zip', extension_dir)
+
+    return FileResponse(
+        path=zip_path + ".zip",
+        filename="viddown_chrome_extension.zip",
+        media_type="application/zip",
+        content_disposition_type="attachment"
     )
 
 @app.get("/")

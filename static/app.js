@@ -12,6 +12,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const shortcutModal = document.getElementById('shortcutModal');
     const closeModalBtn = document.getElementById('closeModalBtn');
     const apiEndpointUrl = document.getElementById('apiEndpointUrl');
+
+    const showChromeExtBtn = document.getElementById('showChromeExtBtn');
+    const chromeExtModal = document.getElementById('chromeExtModal');
+    const closeChromeModalBtn = document.getElementById('closeChromeModalBtn');
     const progressContainer = document.getElementById('progressContainer');
     const downloadProgress = document.getElementById('downloadProgress');
     const progressText = document.getElementById('progressText');
@@ -50,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (showShortcutBtn && shortcutModal && closeModalBtn && apiEndpointUrl) {
         showShortcutBtn.addEventListener('click', () => {
             // Set the absolute URL dynamically based on where the app is hosted
-            apiEndpointUrl.value = window.location.origin + '/api/download';
+            apiEndpointUrl.value = window.location.origin + '/api/shortcut_download';
             shortcutModal.style.display = 'flex';
         });
 
@@ -62,6 +66,23 @@ document.addEventListener('DOMContentLoaded', () => {
         window.addEventListener('click', (event) => {
             if (event.target === shortcutModal) {
                 shortcutModal.style.display = 'none';
+            }
+        });
+    }
+
+    // Chrome Extension Modal Logic
+    if (showChromeExtBtn && chromeExtModal && closeChromeModalBtn) {
+        showChromeExtBtn.addEventListener('click', () => {
+            chromeExtModal.style.display = 'flex';
+        });
+
+        closeChromeModalBtn.addEventListener('click', () => {
+            chromeExtModal.style.display = 'none';
+        });
+
+        window.addEventListener('click', (event) => {
+            if (event.target === chromeExtModal) {
+                chromeExtModal.style.display = 'none';
             }
         });
     }
