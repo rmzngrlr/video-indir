@@ -15,9 +15,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const progressContainer = document.getElementById('progressContainer');
     const downloadProgress = document.getElementById('downloadProgress');
     const progressText = document.getElementById('progressText');
+    const playlistContainer = document.getElementById('playlistContainer');
+    const playlistItems = document.getElementById('playlistItems');
+    const timeInputsContainer = document.getElementById('timeInputsContainer');
 
     let originalStartTime = null;
     let originalEndTime = null;
+    let isPlaylist = false;
 
     // Basic PWA Service Worker Registration
     if ('serviceWorker' in navigator) {
@@ -97,33 +101,84 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
 
             videoTitle.textContent = data.title;
-            if (data.thumbnail) {
-                videoThumbnail.src = data.thumbnail;
-                videoThumbnail.style.display = 'block';
+
+            if (data.videos && data.videos.length > 1) {
+                // Multi-video post
+                isPlaylist = true;
+                videoThumbnail.style.display = 'none'; // Hide single thumbnail
+                timeInputsContainer.style.display = 'none'; // Disable trimming for multi-video
+
+                // Render checklist
+                playlistItems.innerHTML = '';
+                data.videos.forEach(v => {
+                    const div = document.createElement('div');
+                    div.style.display = 'flex';
+                    div.style.alignItems = 'center';
+                    div.style.marginBottom = '10px';
+                    div.style.gap = '10px';
+
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.value = v.index;
+                    checkbox.checked = true; // Default to all selected
+                    checkbox.className = 'playlist-checkbox';
+                    checkbox.style.width = '20px';
+                    checkbox.style.height = '20px';
+
+                    const thumb = document.createElement('img');
+                    thumb.src = v.thumbnail;
+                    thumb.style.width = '60px';
+                    thumb.style.height = '60px';
+                    thumb.style.objectFit = 'cover';
+                    thumb.style.borderRadius = '4px';
+
+                    const label = document.createElement('label');
+                    label.textContent = v.title;
+                    label.style.fontSize = '12px';
+                    label.style.flex = '1';
+
+                    div.appendChild(checkbox);
+                    if(v.thumbnail) div.appendChild(thumb);
+                    div.appendChild(label);
+                    playlistItems.appendChild(div);
+                });
+
+                playlistContainer.style.display = 'block';
+
             } else {
-                videoThumbnail.style.display = 'none';
-            }
+                // Single video
+                isPlaylist = false;
+                playlistContainer.style.display = 'none';
+                timeInputsContainer.style.display = 'flex';
 
-            // Saniyeyi SS:DD:SS formatına çevirme
-            if (data.duration) {
-                const totalSeconds = parseInt(data.duration, 10);
-                const hours = Math.floor(totalSeconds / 3600);
-                const minutes = Math.floor((totalSeconds % 3600) / 60);
-                const seconds = totalSeconds % 60;
+                if (data.thumbnail) {
+                    videoThumbnail.src = data.thumbnail;
+                    videoThumbnail.style.display = 'block';
+                } else {
+                    videoThumbnail.style.display = 'none';
+                }
 
-                const formatTime = (time) => String(time).padStart(2, '0');
+                // Saniyeyi SS:DD:SS formatına çevirme
+                if (data.duration) {
+                    const totalSeconds = parseInt(data.duration, 10);
+                    const hours = Math.floor(totalSeconds / 3600);
+                    const minutes = Math.floor((totalSeconds % 3600) / 60);
+                    const seconds = totalSeconds % 60;
 
-                originalStartTime = "00:00:00";
-                originalEndTime = `${formatTime(hours)}:${formatTime(minutes)}:${formatTime(seconds)}`;
+                    const formatTime = (time) => String(time).padStart(2, '0');
 
-                startTimeInput.value = originalStartTime;
-                endTimeInput.value = originalEndTime;
-            } else {
-                // Uzunluk okunamadıysa varsayılan boş kalsın
-                originalStartTime = "";
-                originalEndTime = "";
-                startTimeInput.value = "";
-                endTimeInput.value = "";
+                    originalStartTime = "00:00:00";
+                    originalEndTime = `${formatTime(hours)}:${formatTime(minutes)}:${formatTime(seconds)}`;
+
+                    startTimeInput.value = originalStartTime;
+                    endTimeInput.value = originalEndTime;
+                } else {
+                    // Uzunluk okunamadıysa varsayılan boş kalsın
+                    originalStartTime = "";
+                    originalEndTime = "";
+                    startTimeInput.value = "";
+                    endTimeInput.value = "";
+                }
             }
 
             videoInfoContainer.style.display = 'block';
@@ -163,6 +218,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const payload = { url: url, client_id: clientId, resolution: resolution };
+
+            if (isPlaylist) {
+                // Gather selected indices
+                const checkboxes = document.querySelectorAll('.playlist-checkbox');
+                const selected = [];
+                checkboxes.forEach(cb => {
+                    if (cb.checked) selected.push(parseInt(cb.value));
+                });
+
+                if (selected.length === 0) {
+                    showStatus('Lütfen indirmek için en az bir video seçin.', 'error');
+                    confirmDownloadBtn.disabled = false;
+                    progressContainer.style.display = 'none';
+                    return;
+                }
+                payload.selected_indices = selected;
+            } else {
+                // Only send slice times if the user actually modified them
+                if ((startTime && startTime !== originalStartTime) || (endTime && endTime !== originalEndTime)) {
+                    payload.start_time = startTime;
+                    payload.end_time = endTime;
+                }
+            }
 
             progressInterval = setInterval(async () => {
                 try {
