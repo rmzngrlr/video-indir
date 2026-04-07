@@ -130,7 +130,7 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
 
     # Unique filename base
     file_id = str(uuid.uuid4())
-    output_template = os.path.join(DOWNLOAD_DIR, f"{file_id}.%(ext)s")
+    output_template = os.path.join(DOWNLOAD_DIR, f"{file_id}_%(id)s.%(ext)s")
 
     def progress_hook(d):
         if request.client_id and d['status'] == 'downloading':
@@ -146,7 +146,7 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
         # Sadece Apple/iOS (iPhone) cihazların yerel olarak desteklediği H.264 (avc) codec'ini zorlar
         'format': format_str,
         'merge_output_format': 'mp4', # İndirme bitince mp4'e birleştir/dönüştür
-        'noplaylist': True,
+        'noplaylist': False, # Allow downloading all videos from a tweet/playlist
         'quiet': False,
         'updatetime': False, # Ensures the file gets the current date, not the original upload date (fixes gallery sorting)
         'js_runtimes': {'node': {}}, # Explicitly tell yt-dlp to use node JS runtime
@@ -208,26 +208,24 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
         # We run yt_dlp in a separate thread so it doesn't block the async event loop
         def run_yt_dlp(opts, url):
             with yt_dlp.YoutubeDL(opts) as ydl:
-                info_dict = ydl.extract_info(url, download=True)
-                # Ensure we get the correct final filename
-                return ydl.prepare_filename(info_dict)
+                ydl.extract_info(url, download=True)
+                return True
 
-        final_filename = await asyncio.to_thread(run_yt_dlp, ydl_opts, request.url)
+        await asyncio.to_thread(run_yt_dlp, ydl_opts, request.url)
 
-        if not final_filename or not os.path.exists(final_filename):
-             # Sometimes yt-dlp changes the extension after merge (e.g., to .mkv or .mp4)
-             # Let's search for the file starting with our uuid
-             found = False
-             for f in os.listdir(DOWNLOAD_DIR):
-                 if f.startswith(file_id):
-                     final_filename = os.path.join(DOWNLOAD_DIR, f)
-                     found = True
-                     break
-             if not found:
-                 raise HTTPException(status_code=500, detail="Download failed, file not found.")
+        # Bulunan tüm dosyaları (aynı id prefix'ine sahip) topla
+        downloaded_files = []
+        for f in os.listdir(DOWNLOAD_DIR):
+            if f.startswith(file_id):
+                downloaded_files.append(os.path.join(DOWNLOAD_DIR, f))
 
-        if final_filename and os.path.exists(final_filename):
-            temp_filename = final_filename + ".temp.mp4"
+        if not downloaded_files:
+             raise HTTPException(status_code=500, detail="Download failed, file not found.")
+
+        final_filename = downloaded_files[0] # iOS Shortcut için sadece bir tane döndüreceğiz
+
+        for current_file in downloaded_files:
+            temp_filename = current_file + ".temp.mp4"
             import subprocess
             cmd = []
 
@@ -248,7 +246,7 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
                 cmd = [
                     "ffmpeg", "-y",
                     "-ss", request.start_time,
-                    "-i", final_filename,
+                    "-i", current_file,
                     "-t", str(duration_sec),
                     "-map_metadata", "-1",
                     "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
@@ -258,7 +256,7 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
                 # Eğer kırpma (trim) yoksa sadece metadata'yı siliyoruz
                 cmd = [
                     "ffmpeg", "-y",
-                    "-i", final_filename,
+                    "-i", current_file,
                     "-map_metadata", "-1",
                     "-c", "copy", temp_filename
                 ]
@@ -274,7 +272,7 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
 
                 if proc.returncode == 0 and os.path.exists(temp_filename):
                     # Orijinal dosyayı silip kesilmiş/temizlenmiş dosyayı orijinal ismiyle kaydediyoruz.
-                    os.replace(temp_filename, final_filename)
+                    os.replace(temp_filename, current_file)
                 else:
                     print(f"FFmpeg clipping failed: {stderr.decode()}")
             except Exception as e:
@@ -282,22 +280,14 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
                 if os.path.exists(temp_filename):
                     os.remove(temp_filename)
 
-        if not final_filename or not os.path.exists(final_filename):
-             found = False
-             for f in os.listdir(DOWNLOAD_DIR):
-                 if f.startswith(file_id):
-                     final_filename = os.path.join(DOWNLOAD_DIR, f)
-                     found = True
-                     break
-             if not found:
-                 raise HTTPException(status_code=500, detail="Download failed, file not found.")
-
         # Schedule file deletion after it's sent
-        background_tasks.add_task(remove_file, final_filename)
+        for f in downloaded_files:
+            background_tasks.add_task(remove_file, f)
 
         # We extract a clean name for the user
         download_name = "video" + os.path.splitext(final_filename)[1]
         
+        # Sadece bir adet FileResponse döndürebiliriz (Kestirmeler uygulaması için)
         return FileResponse(
             path=final_filename, 
             filename=download_name, 
@@ -327,7 +317,7 @@ async def prepare_download(request: DownloadRequest):
         request.url = url_match.group(1)
 
     file_id = str(uuid.uuid4())
-    output_template = os.path.join(DOWNLOAD_DIR, f"{file_id}.%(ext)s")
+    output_template = os.path.join(DOWNLOAD_DIR, f"{file_id}_%(id)s.%(ext)s")
 
     def progress_hook(d):
         if request.client_id and d['status'] == 'downloading':
@@ -348,7 +338,7 @@ async def prepare_download(request: DownloadRequest):
         # Sadece Apple/iOS (iPhone) cihazların yerel olarak desteklediği H.264 (avc) codec'ini zorlar
         'format': format_str,
         'merge_output_format': 'mp4', # İndirme bitince mp4'e birleştir/dönüştür
-        'noplaylist': True,
+        'noplaylist': False, # Allow downloading all videos from a tweet/playlist
         'quiet': False,
         'updatetime': False, # Ensures the file gets the current date, not the original upload date (fixes gallery sorting)
         'js_runtimes': {'node': {}}, # Explicitly tell yt-dlp to use node JS runtime
@@ -382,15 +372,24 @@ async def prepare_download(request: DownloadRequest):
     try:
         def run_yt_dlp(opts, url):
             with yt_dlp.YoutubeDL(opts) as ydl:
-                info_dict = ydl.extract_info(url, download=True)
-                return ydl.prepare_filename(info_dict)
+                ydl.extract_info(url, download=True)
+                return True
 
-        final_filename = await asyncio.to_thread(run_yt_dlp, ydl_opts, request.url)
+        await asyncio.to_thread(run_yt_dlp, ydl_opts, request.url)
 
-        # Eğer kesit (clipping) isteniyorsa, yt-dlp işleminin bitmesinin ardından Python ile FFmpeg'i çağırıyoruz.
-        # Bu yöntem yt-dlp hook'larına kıyasla yollar ve tırnak işaretleriyle çok daha tutarlı çalışır.
-        if final_filename and os.path.exists(final_filename):
-            temp_filename = final_filename + ".temp.mp4"
+        # Bulunan tüm dosyaları topla
+        downloaded_files = []
+        for f in os.listdir(DOWNLOAD_DIR):
+            if f.startswith(file_id):
+                downloaded_files.append(os.path.join(DOWNLOAD_DIR, f))
+
+        if not downloaded_files:
+             raise HTTPException(status_code=500, detail="Download failed, file not found.")
+
+        results = []
+
+        for idx, current_file in enumerate(downloaded_files):
+            temp_filename = current_file + ".temp.mp4"
             import subprocess
             cmd = []
 
@@ -411,7 +410,7 @@ async def prepare_download(request: DownloadRequest):
                 cmd = [
                     "ffmpeg", "-y",
                     "-ss", request.start_time,
-                    "-i", final_filename,
+                    "-i", current_file,
                     "-t", str(duration_sec),
                     "-map_metadata", "-1",
                     "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
@@ -421,7 +420,7 @@ async def prepare_download(request: DownloadRequest):
                 # Eğer kırpma (trim) yoksa sadece metadata'yı siliyoruz
                 cmd = [
                     "ffmpeg", "-y",
-                    "-i", final_filename,
+                    "-i", current_file,
                     "-map_metadata", "-1",
                     "-c", "copy", temp_filename
                 ]
@@ -437,7 +436,7 @@ async def prepare_download(request: DownloadRequest):
                 
                 if proc.returncode == 0 and os.path.exists(temp_filename):
                     # Orijinal dosyayı silip kesilmiş/temizlenmiş dosyayı orijinal ismiyle kaydediyoruz.
-                    os.replace(temp_filename, final_filename)
+                    os.replace(temp_filename, current_file)
                 else:
                     print(f"FFmpeg clipping failed: {stderr.decode()}")
             except Exception as e:
@@ -445,20 +444,17 @@ async def prepare_download(request: DownloadRequest):
                 if os.path.exists(temp_filename):
                     os.remove(temp_filename)
 
-        if not final_filename or not os.path.exists(final_filename):
-             found = False
-             for f in os.listdir(DOWNLOAD_DIR):
-                 if f.startswith(file_id):
-                     final_filename = os.path.join(DOWNLOAD_DIR, f)
-                     found = True
-                     break
-             if not found:
-                 raise HTTPException(status_code=500, detail="Download failed, file not found.")
+        # Instead of returning the file directly, return the tokens so the frontend can do standard GET downloads
+        results = []
+        for idx, current_file in enumerate(downloaded_files):
+            token = os.path.basename(current_file)
+            if len(downloaded_files) > 1:
+                filename = f"video_part{idx + 1}" + os.path.splitext(current_file)[1]
+            else:
+                filename = "video" + os.path.splitext(current_file)[1]
+            results.append({"token": token, "filename": filename})
 
-        # Instead of returning the file directly, return the token so the frontend can do a standard GET download
-        # The frontend will hit GET /api/download_file/{file_id}
-        token = os.path.basename(final_filename)
-        return {"token": token, "filename": "video" + os.path.splitext(final_filename)[1]}
+        return {"files": results}
 
     except yt_dlp.utils.DownloadError as e:
         error_msg = str(e)
