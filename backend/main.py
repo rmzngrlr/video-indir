@@ -1,6 +1,7 @@
 import os
 import uuid
 import asyncio
+import subprocess
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -172,7 +173,12 @@ async def shortcut_download_video(request: DownloadRequest, background_tasks: Ba
             'preferedformat': 'mp4',
         }],
         'postprocessor_args': {
-            'FFmpegVideoConvertor': ['-c', 'copy', '-map_metadata', '-1']
+            'FFmpegVideoConvertor': [
+                '-map_metadata', '-1',
+                '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23',
+                '-pix_fmt', 'yuv420p', '-movflags', '+faststart',
+                '-c:a', 'aac'
+            ]
         }
     }
 
@@ -270,6 +276,7 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
     ydl_opts['postprocessor_args'] = {'FFmpegVideoConvertor': [
         '-map_metadata', '-1',
         '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23',
+        '-pix_fmt', 'yuv420p', '-movflags', '+faststart',
         '-c:a', 'aac'
     ]}
 
@@ -310,10 +317,14 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
         # ffmpeg -ss X -to Y -i input ... is tricky with yt-dlp's standard opts 
         # so we inject it into the postprocessor args.
         # But a more reliable way if download_ranges gives 403: download full, then clip.
-        ydl_opts['postprocessor_args'] = [
+        ydl_opts['postprocessor_args'] = {'FFmpegVideoConvertor': [
             '-ss', request.start_time,
-            '-to', request.end_time
-        ]
+            '-to', request.end_time,
+            '-map_metadata', '-1',
+            '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23',
+            '-pix_fmt', 'yuv420p', '-movflags', '+faststart',
+            '-c:a', 'aac'
+        ]}
 
     try:
         # We run yt_dlp in a separate thread so it doesn't block the async event loop
@@ -337,7 +348,6 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
 
         for current_file in downloaded_files:
             temp_filename = current_file + ".temp.mp4"
-            import subprocess
             cmd = []
 
             if request.start_time and request.end_time:
@@ -361,6 +371,7 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
                     "-t", str(duration_sec),
                     "-map_metadata", "-1",
                     "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+                    "-pix_fmt", "yuv420p", "-movflags", "+faststart",
                     "-c:a", "aac", temp_filename
                 ]
             else:
@@ -369,7 +380,9 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
                     "ffmpeg", "-y",
                     "-i", current_file,
                     "-map_metadata", "-1",
-                    "-c", "copy", temp_filename
+                    "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+                    "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+                    "-c:a", "aac", temp_filename
                 ]
 
             try:
@@ -467,6 +480,7 @@ async def prepare_download(request: DownloadRequest):
     ydl_opts['postprocessor_args'] = {'FFmpegVideoConvertor': [
         '-map_metadata', '-1',
         '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23',
+        '-pix_fmt', 'yuv420p', '-movflags', '+faststart',
         '-c:a', 'aac'
     ]}
 
@@ -505,7 +519,6 @@ async def prepare_download(request: DownloadRequest):
 
         for idx, current_file in enumerate(downloaded_files):
             temp_filename = current_file + ".temp.mp4"
-            import subprocess
             cmd = []
 
             if request.start_time and request.end_time:
@@ -529,6 +542,7 @@ async def prepare_download(request: DownloadRequest):
                     "-t", str(duration_sec),
                     "-map_metadata", "-1",
                     "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+                    "-pix_fmt", "yuv420p", "-movflags", "+faststart",
                     "-c:a", "aac", temp_filename
                 ]
             else:
@@ -537,7 +551,9 @@ async def prepare_download(request: DownloadRequest):
                     "ffmpeg", "-y",
                     "-i", current_file,
                     "-map_metadata", "-1",
-                    "-c", "copy", temp_filename
+                    "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+                    "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+                    "-c:a", "aac", temp_filename
                 ]
 
             try:
