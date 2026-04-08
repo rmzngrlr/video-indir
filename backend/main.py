@@ -165,17 +165,14 @@ async def shortcut_download_video(request: DownloadRequest, background_tasks: Ba
         'noplaylist': True,
         'quiet': False,
         'updatetime': False,
+        'socket_timeout': 30, # network stability
         'js_runtimes': {'node': {}},
         'postprocessors': [{
             'key': 'FFmpegVideoConvertor',
             'preferedformat': 'mp4',
-        },
-        {
-            'key': 'FFmpegMetadata',
-            'add_metadata': False,
         }],
         'postprocessor_args': {
-            'FFmpegMetadata': ['-map_metadata', '-1', '-preset', 'ultrafast']
+            'FFmpegVideoConvertor': ['-c', 'copy', '-map_metadata', '-1']
         }
     }
 
