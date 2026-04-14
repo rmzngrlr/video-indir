@@ -1,0 +1,14 @@
+venv/
+downloads/
+__pycache__/
+*.pyc
+.git/
+.env
+.DS_Store
+extension.zip
+viddown_chrome_extension.zip
+instagram_cookies.txt
+facebook_cookies.txt
+youtube_cookies.txt
+cookies.txt
+*.log
