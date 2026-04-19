@@ -84,14 +84,14 @@ async def get_video_info(request: DownloadRequest):
 
     # Determine which cookie file to use based on URL
     cookie_file = "cookies.txt" # fallback
-    if "instagram.com" in request.url.lower() and os.path.exists("instagram_cookies.txt"):
+    if "instagram.com" in request.url.lower() and os.path.exists("instagram_cookies.txt") and os.path.getsize("instagram_cookies.txt") > 0:
         cookie_file = "instagram_cookies.txt"
-    elif "facebook.com" in request.url.lower() and os.path.exists("facebook_cookies.txt"):
+    elif "facebook.com" in request.url.lower() and os.path.exists("facebook_cookies.txt") and os.path.getsize("facebook_cookies.txt") > 0:
         cookie_file = "facebook_cookies.txt"
-    elif "youtube.com" in request.url.lower() and os.path.exists("youtube_cookies.txt"):
+    elif "youtube.com" in request.url.lower() and os.path.exists("youtube_cookies.txt") and os.path.getsize("youtube_cookies.txt") > 0:
         cookie_file = "youtube_cookies.txt"
 
-    if os.path.exists(cookie_file):
+    if os.path.exists(cookie_file) and os.path.getsize(cookie_file) > 0:
         ydl_opts['cookiefile'] = cookie_file
 
     ydl_opts['socket_timeout'] = 30  # Timeout for slow network connections
@@ -183,9 +183,9 @@ async def shortcut_download_video(request: DownloadRequest, background_tasks: Ba
     }
 
     cookie_file = None
-    if "instagram.com" in request.url.lower() and os.path.exists("instagram_cookies.txt"):
+    if "instagram.com" in request.url.lower() and os.path.exists("instagram_cookies.txt") and os.path.getsize("instagram_cookies.txt") > 0:
         cookie_file = "instagram_cookies.txt"
-    elif "facebook.com" in request.url.lower() and os.path.exists("facebook_cookies.txt"):
+    elif "facebook.com" in request.url.lower() and os.path.exists("facebook_cookies.txt") and os.path.getsize("facebook_cookies.txt") > 0:
         cookie_file = "facebook_cookies.txt"
 
     if cookie_file:
@@ -282,14 +282,14 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
 
     # Determine which cookie file to use based on URL
     cookie_file = "cookies.txt" # fallback
-    if "instagram.com" in request.url.lower() and os.path.exists("instagram_cookies.txt"):
+    if "instagram.com" in request.url.lower() and os.path.exists("instagram_cookies.txt") and os.path.getsize("instagram_cookies.txt") > 0:
         cookie_file = "instagram_cookies.txt"
-    elif "facebook.com" in request.url.lower() and os.path.exists("facebook_cookies.txt"):
+    elif "facebook.com" in request.url.lower() and os.path.exists("facebook_cookies.txt") and os.path.getsize("facebook_cookies.txt") > 0:
         cookie_file = "facebook_cookies.txt"
-    elif "youtube.com" in request.url.lower() and os.path.exists("youtube_cookies.txt"):
+    elif "youtube.com" in request.url.lower() and os.path.exists("youtube_cookies.txt") and os.path.getsize("youtube_cookies.txt") > 0:
         cookie_file = "youtube_cookies.txt"
 
-    if os.path.exists(cookie_file):
+    if os.path.exists(cookie_file) and os.path.getsize(cookie_file) > 0:
         ydl_opts['cookiefile'] = cookie_file
 
     ydl_opts['socket_timeout'] = 30  # Timeout for slow network connections
@@ -486,14 +486,14 @@ async def prepare_download(request: DownloadRequest):
 
     # Determine which cookie file to use based on URL
     cookie_file = "cookies.txt" # fallback
-    if "instagram.com" in request.url.lower() and os.path.exists("instagram_cookies.txt"):
+    if "instagram.com" in request.url.lower() and os.path.exists("instagram_cookies.txt") and os.path.getsize("instagram_cookies.txt") > 0:
         cookie_file = "instagram_cookies.txt"
-    elif "facebook.com" in request.url.lower() and os.path.exists("facebook_cookies.txt"):
+    elif "facebook.com" in request.url.lower() and os.path.exists("facebook_cookies.txt") and os.path.getsize("facebook_cookies.txt") > 0:
         cookie_file = "facebook_cookies.txt"
-    elif "youtube.com" in request.url.lower() and os.path.exists("youtube_cookies.txt"):
+    elif "youtube.com" in request.url.lower() and os.path.exists("youtube_cookies.txt") and os.path.getsize("youtube_cookies.txt") > 0:
         cookie_file = "youtube_cookies.txt"
 
-    if os.path.exists(cookie_file):
+    if os.path.exists(cookie_file) and os.path.getsize(cookie_file) > 0:
         ydl_opts['cookiefile'] = cookie_file
 
     ydl_opts['socket_timeout'] = 30  # Timeout for slow network connections
