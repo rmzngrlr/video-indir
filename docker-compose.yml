@@ -12,9 +12,9 @@ services:
       # Mount the downloads directory to persist temporary files during processing
       - ./downloads:/app/downloads
       # Mount cookie files so they can be updated on the host without rebuilding the container
-      - ./instagram_cookies.txt:/app/instagram_cookies.txt:ro
-      - ./youtube_cookies.txt:/app/youtube_cookies.txt:ro
-      - ./facebook_cookies.txt:/app/facebook_cookies.txt:ro
-      - ./cookies.txt:/app/cookies.txt:ro
+      - ./instagram_cookies.txt:/app/instagram_cookies.txt
+      - ./youtube_cookies.txt:/app/youtube_cookies.txt
+      - ./facebook_cookies.txt:/app/facebook_cookies.txt
+      - ./cookies.txt:/app/cookies.txt
     environment:
       - TZ=UTC
