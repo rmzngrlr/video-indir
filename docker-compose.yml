@@ -12,11 +12,9 @@ services:
       # Mount the downloads directory to persist temporary files during processing
       - ./downloads:/app/downloads
       # Mount cookie files so they can be updated on the host without rebuilding the container
-      # Using touch commands in a wrapper or just relying on docker's ability to mount files if they exist
-      # Note: Docker creates directories if the files don't exist, so we only document them here.
-      # If you use cookies, uncomment the lines below after creating the empty files on your host system:
-      # - ./instagram_cookies.txt:/app/instagram_cookies.txt:ro
-      # - ./youtube_cookies.txt:/app/youtube_cookies.txt:ro
-      # - ./cookies.txt:/app/cookies.txt:ro
+      - ./instagram_cookies.txt:/app/instagram_cookies.txt:ro
+      - ./youtube_cookies.txt:/app/youtube_cookies.txt:ro
+      - ./facebook_cookies.txt:/app/facebook_cookies.txt:ro
+      - ./cookies.txt:/app/cookies.txt:ro
     environment:
       - TZ=UTC
